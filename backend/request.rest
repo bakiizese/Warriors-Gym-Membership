@@ -1,0 +1,37 @@
+post http://localhost:3000/auth/sign-up/member
+Content-Type: application/json
+
+{
+    "full_name": "bereket zeselassie",
+    "phone_number": "938792",
+    "password": " ",
+    "language": "eng",
+    "admin_level": "admin",
+    "gender": "male",
+    "height": 120,
+    "weight": 69,
+    "age": 28,
+    "activity_status": "active"
+
+}
+
+###
+post http://localhost:3000/auth/sign-in/member
+Content-Type: application/json
+
+{
+    "phone_number": "938792",
+    "password": " "
+}
+
+###
+post http://localhost:3000/auth/sign-up/admin
+Content-Type: application/json
+
+{
+    "full_name": "Adonay",
+    "phone_number": "938792",
+    "password": " ",
+    "language": "english",
+    "admin_level": "admin"
+}

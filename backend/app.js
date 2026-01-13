@@ -1,0 +1,36 @@
+import express from "express";
+import sequelize from "./config/database.js";
+import "./models/Member.js";
+import "./models/Admin.js";
+import "./models/AttendanceLog.js";
+import "./models/TransactionHistory.js";
+import "./models/MembershipPlan.js";
+import "./models/WorkoutPlan.js";
+import "./models/Image.js";
+import "./models/Video.js";
+import association from "./models/Association.js";
+import authRouter from "./routes/auth_route.js";
+import adminRouter from "./routes/admin_route.js";
+import memberRouter from "./routes/member_route.js";
+import dotenv from "dotenv";
+
+const PORT = 3000;
+const HOST = "0.0.0.0";
+
+const app = express();
+app.use(express.json());
+dotenv.config();
+association();
+
+sequelize
+  .sync({ alter: true })
+  .then(() => console.log("tables created successfuly"));
+
+//routes
+app.use("/auth", authRouter);
+app.use("/admin", adminRouter);
+app.use("/member", memberRouter);
+
+app.listen(PORT, HOST, () => console.log("server running....."));
+
+export default app;
