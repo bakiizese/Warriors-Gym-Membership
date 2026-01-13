@@ -10,6 +10,17 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
+  "expo": {
+  "doctor": {
+	"reactNativeDirectoryCheck": {
+	"exclude": [
+	"react-native-nfc-manager",
+	"react-native-hce",
+	"react-native-wheel-pick"
+]
+}
+}
+},
   "dependencies": {
     "@expo-google-fonts/jura": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
