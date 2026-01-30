@@ -7,7 +7,7 @@ export default function AuthPage() {
   const { path } = useLocalSearchParams();
   return (
     <AppGradient>
-      <SafeAreaView>
+      <SafeAreaView className="flex-1">
         <Auth path={path} />
       </SafeAreaView>
     </AppGradient>

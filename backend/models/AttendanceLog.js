@@ -14,19 +14,23 @@ AttendanceLog.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    membership_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
     check_in: {
-      type: DataTypes.TIME,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     check_out: {
-      type: DataTypes.TIME,
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },
   {
     sequelize,
     modelName: "attendance-log",
-  }
+  },
 );
 
 export default AttendanceLog;

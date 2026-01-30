@@ -13,6 +13,7 @@ import key from "@/assets/icons/key.png";
 import hide_key from "@/assets/icons/hide_key.png";
 import unhide_key from "@/assets/icons/hide_key.png";
 import profile from "@/assets/icons/profile.png";
+import profileR from "@/assets/icons/profile-r.png";
 
 const Sign = ({
   signType,
@@ -30,11 +31,11 @@ const Sign = ({
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
-      () => setKeyboardVisible(true)
+      () => setKeyboardVisible(true),
     );
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
-      () => setKeyboardVisible(false)
+      () => setKeyboardVisible(false),
     );
 
     return () => {
@@ -45,11 +46,11 @@ const Sign = ({
 
   return (
     <View
-      className={`${isKeyboardVisible ? "py-24" : "justify-center"} flex-1 items-center mx-14 gap-2`}
+      className={`${isKeyboardVisible ? "py-14" : "justify-center"} flex-1 items-center mx-14 gap-2`}
     >
       {signType === "signUp" && (
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
-          <Image source={profile} resizeMode="contain" className="h-7 w-7" />
+          <Image source={profileR} resizeMode="contain" className="h-7 w-7" />
           <TextInput
             value={fullName}
             onChangeText={(text) => setFullName?.(text)}

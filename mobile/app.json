@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Warriors",
     "slug": "warriors-members-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,9 +8,6 @@
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -20,10 +17,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.bereketzeselassie.nfc_hce",
-      "permissions": [
-        "android.permission.NFC"
-      ]
+      "package": "com.bereketzese.warriorsmembersmobile"
     },
     "web": {
       "output": "static",
@@ -35,7 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#000000",
@@ -56,6 +50,9 @@
       "eas": {
         "projectId": "d3a10551-4772-4286-9722-a29c3f6455c5"
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.bereketzese.warriorsmembersmobile"
     }
   }
 }

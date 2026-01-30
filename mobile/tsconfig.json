@@ -12,7 +12,7 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts",
-    "app/App.jsx",
+    "app/index.jsx",
     "app/AuthPage.jsx",
     "components/MembershipUi.jsx",
     "components/Input.jsx",
@@ -28,6 +28,7 @@
     "components/AuthPage/Gender.jsx",
     "components/AuthPage/Auth.jsx",
     "components/AuthPage/ApiClient.jsx",
-    "components/AuthPage/Age.jsx"
+    "components/AuthPage/Age.jsx",
+    "app/MemberPages/_layout.jsx"
   ]
 }

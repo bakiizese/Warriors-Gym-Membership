@@ -21,19 +21,21 @@ import Language from "./Language";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import Weight from "./Weight";
-import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ImageBackground } from "react-native";
+import logo from "../../assets/images/logo.png";
+import { useRouter } from "expo-router";
 
 const Auth = ({ path } = {}) => {
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const [pageNumber, setPageNumber] = useState(Number(path) || 0);
 
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState();
   const [password, setPassword] = useState("");
-  const [language, setLanguage] = useState("english");
-  const [gender, setGender] = useState("male");
+  const [language, setLanguage] = useState("English");
+  const [gender, setGender] = useState("Male");
   const [selectedAge, setSelectedAge] = useState(25);
   const [selectedHeight, setSelectedHeight] = useState(160);
   const [selectedWeight, setSelectedWeight] = useState(160);
@@ -113,14 +115,10 @@ const Auth = ({ path } = {}) => {
     setLoadingStat(true);
     setErrorMessage("none");
 
-    //fetch post login
-    console.log("phoneNumber = " + phoneNumber);
-    console.log("password = " + password);
-    console.log("language = " + language);
     requestLogin();
   };
 
-  const requestLogin = async ({ phone_number, pwd } = {}) => {
+  const requestLogin = async () => {
     try {
       const res = await ApiClient.post("auth/sign-in/member", {
         phone_number: phoneNumber,
@@ -131,11 +129,9 @@ const Auth = ({ path } = {}) => {
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem(
         "userData",
-        JSON.stringify({ userCheck: userCheck })
+        JSON.stringify({ userCheck: userCheck }),
       );
-
-      navigation.navigate("MemberDashboard");
-
+      router.replace("MemberDashboard");
       setLoadingStat(false);
       setErrorMessage("");
     } catch (error) {
@@ -167,8 +163,8 @@ const Auth = ({ path } = {}) => {
         password: password,
         language: language,
       });
-      console.log(res.data);
-      requestLogin({ phone_number: phoneNumber, pwd: password });
+      console.log("fetch regitration", res.data.user);
+      requestLogin();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -230,12 +226,16 @@ const Auth = ({ path } = {}) => {
     }
   };
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <TouchableWithoutFeedback
+      onPress={Keyboard.dismiss}
+      accessible={false}
+      className=""
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <View className="flex h-full">
+        <View className="flex flex-col h-full">
           <View className="mx-7 flex flex-col gap-8">
             <View className="flex flex-row justify-center items-end gap-2 mt-8 py-4 border-b-[2px] border-[#FFFFFF]/20">
               <Text className="text-white text-[18px] font-jura-bold">
@@ -263,7 +263,7 @@ const Auth = ({ path } = {}) => {
               </View>
             </View>
             <View>
-              <Text className="text-white text-[43px] font-jura-bold">
+              <Text className="text-white text-[30px] font-jura-bold">
                 {authNavigation.title[pageNumber]}
               </Text>
               <Text className="text-white text-[22px] font-jura-bold">
@@ -271,60 +271,62 @@ const Auth = ({ path } = {}) => {
               </Text>
             </View>
           </View>
-          <View className="h-[460px] justify-center">
-            {authNavigation.page[pageNumber]}
-          </View>
-          <View className="flex-1 justify-end py-6 gap-2">
-            <TouchableOpacity
-              activeOpacity={0.7}
-              className="bg-[#56C556]/70 h-[50px] mx-7 rounded-full justify-center items-center flex flex-row gap-2"
-              onPress={() => {
-                if (authNavigation.buttonText[pageNumber] === "Login") {
-                  fetchLogin();
-                } else if (authNavigation.title[pageNumber] === "Register") {
-                  checkRegister();
-                } else if (
-                  authNavigation.title[pageNumber] === "What is your weight"
-                ) {
-                  fetchRegister();
-                } else if (pageNumber < 7) {
-                  setPageNumber(pageNumber + 1);
-                }
-              }}
-            >
-              <Text className="text-white text-[28px] font-jura-bold">
-                {authNavigation.buttonText[pageNumber]}
-              </Text>
-              {loadingStat ? (
-                <ActivityIndicator size="large" color="#FFFFFF" />
-              ) : (
-                <Image source={arrow} className="w-8 h-7" />
-              )}
-            </TouchableOpacity>
-            {authNavigation.buttonText[pageNumber] !== "Let's Go" && (
+          <View className="flex-1">
+            <View className="flex-1 justify-center">
+              {authNavigation.page[pageNumber]}
+            </View>
+            <View className=" justify-end py-6 gap-2">
               <TouchableOpacity
-                disabled={loadingStat}
                 activeOpacity={0.7}
-                className="h-[50px] mx-7 rounded-full justify-center items-center flex flex-row gap-2"
+                className="bg-[#56C556]/70 h-[50px] mx-7 rounded-full justify-center items-center flex flex-row gap-2"
                 onPress={() => {
                   if (authNavigation.buttonText[pageNumber] === "Login") {
+                    fetchLogin();
+                  } else if (authNavigation.title[pageNumber] === "Register") {
+                    checkRegister();
+                  } else if (
+                    authNavigation.title[pageNumber] === "What is your weight"
+                  ) {
+                    fetchRegister();
+                  } else if (pageNumber < 7) {
                     setPageNumber(pageNumber + 1);
-                  } else if (pageNumber > 0) {
-                    setPageNumber(pageNumber - 1);
                   }
                 }}
               >
-                {pageNumber !== 2 && (
-                  <Image source={arrow} className="w-8 h-7 scale-x-[-1]" />
-                )}
                 <Text className="text-white text-[28px] font-jura-bold">
-                  {pageNumber === 2 ? "Register" : "Back"}
+                  {authNavigation.buttonText[pageNumber]}
                 </Text>
-                {pageNumber === 2 && (
+                {loadingStat ? (
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                ) : (
                   <Image source={arrow} className="w-8 h-7" />
                 )}
               </TouchableOpacity>
-            )}
+              {authNavigation.buttonText[pageNumber] !== "Let's Go" && (
+                <TouchableOpacity
+                  disabled={loadingStat}
+                  activeOpacity={0.7}
+                  className="h-[50px] mx-7 rounded-full justify-center items-center flex flex-row gap-2"
+                  onPress={() => {
+                    if (authNavigation.buttonText[pageNumber] === "Login") {
+                      setPageNumber(pageNumber + 1);
+                    } else if (pageNumber > 0) {
+                      setPageNumber(pageNumber - 1);
+                    }
+                  }}
+                >
+                  {pageNumber !== 2 && (
+                    <Image source={arrow} className="w-8 h-7 scale-x-[-1]" />
+                  )}
+                  <Text className="text-white text-[28px] font-jura-bold">
+                    {pageNumber === 2 ? "Register" : "Back"}
+                  </Text>
+                  {pageNumber === 2 && (
+                    <Image source={arrow} className="w-8 h-7" />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>

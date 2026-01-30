@@ -7,7 +7,6 @@ import {
   Jura_400Regular,
   Jura_700Bold,
 } from "@expo-google-fonts/jura";
-//import readtag from "../components/NFC_Reader";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,10 +15,8 @@ export default function RootLayout() {
     Jura_400Regular,
     Jura_700Bold,
   });
-  //readtag();
 
   useEffect(() => {
-    readtag();
     if (loaded || error) {
       SplashScreen.hideAsync();
     }
@@ -29,11 +26,5 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="App" />
-      <Stack.Screen name="AuthPage" />
-      <Stack.Screen name="AdminDashboard" />
-    </Stack>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

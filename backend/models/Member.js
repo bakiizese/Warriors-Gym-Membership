@@ -53,18 +53,6 @@ Member.init(
       type: DataTypes.UUID,
       allowNull: true,
     },
-    membership_plan_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
-    transaction_history_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
-    attendance_log_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
     workout_taken: {
       type: DataTypes.JSONB,
       allowNull: true,
@@ -74,7 +62,7 @@ Member.init(
   {
     sequelize,
     modelName: "member",
-  }
+  },
 );
 
 export default Member;

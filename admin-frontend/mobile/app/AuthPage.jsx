@@ -36,11 +36,11 @@ export default function AuthPage() {
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
-      () => setKeyboardVisible(true)
+      () => setKeyboardVisible(true),
     );
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
-      () => setKeyboardVisible(false)
+      () => setKeyboardVisible(false),
     );
 
     return () => {
@@ -66,9 +66,6 @@ export default function AuthPage() {
     setLoadingStat(true);
     setErrorMessage("none");
 
-    //fetch post login
-    console.log("phoneNumber = " + phoneNumber);
-    console.log("password = " + password);
     requestLogin();
   };
 
@@ -83,7 +80,7 @@ export default function AuthPage() {
       await AsyncStorage.setItem("adminToken", token);
       await AsyncStorage.setItem(
         "adminData",
-        JSON.stringify({ userCheck: userCheck })
+        JSON.stringify({ userCheck: userCheck }),
       );
 
       navigation.navigate("AdminDashboard");

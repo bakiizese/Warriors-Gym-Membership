@@ -3,6 +3,7 @@ import Member from "../models/Member.js";
 import Admin from "../models/Admin.js";
 import { hash_password, verify_password } from "../utils/password.js";
 import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
+import MembershipPlan from "../models/MembershipPlan.js";
 
 const authRouter = express.Router();
 
@@ -25,7 +26,7 @@ const memberData = [
   "language",
 ];
 
-authRouter.post("/sign-up/:userType", async (req, res) => {
+export async function signUp(req, res) {
   const userType = req.params.userType;
   const userData = req.body;
 
@@ -59,6 +60,10 @@ authRouter.post("/sign-up/:userType", async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: "function error - " + err });
   }
+}
+
+authRouter.post("/sign-up/:userType", async (req, res) => {
+  return signUp(req, res);
 });
 authRouter.post("/sign-in/:userType", async (req, res) => {
   const userType = req.params.userType;
@@ -84,7 +89,7 @@ authRouter.post("/sign-in/:userType", async (req, res) => {
   //check if password is correct
   const check_password = await verify_password(
     userData["password"],
-    userCheck["password"]
+    userCheck["password"],
   );
   if (!check_password) {
     return res.status(400).json({ error: "incorrect password" });

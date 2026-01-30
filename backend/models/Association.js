@@ -2,6 +2,7 @@ import AttendanceLog from "./AttendanceLog.js";
 import TransactionHistory from "./TransactionHistory.js";
 import Member from "./Member.js";
 import MembershipPlan from "./MembershipPlan.js";
+import Membership from "./Membership.js";
 import WorkoutPlan from "./WorkoutPlan.js";
 import Image from "./Image.js";
 import Video from "./Video.js";
@@ -39,11 +40,28 @@ const association = () => {
   });
 
   //a member can only have one membership plan but membershiplan can many members - one to many
-  MembershipPlan.hasMany(Member, {
-    foreignKey: "membership_plan_id",
-    as: "members",
+  // MembershipPlan.hasMany(Member, {
+  //   foreignKey: "membership_plan_id",
+  //   as: "members",
+  // });
+  // Member.belongsTo(MembershipPlan, {
+  //   foreignKey: "membership_plan_id",
+  //   as: "membershipPlan",
+  // });
+  Member.hasOne(Membership, {
+    foreignKey: "member_id",
+    as: "membership",
   });
-  Member.belongsTo(MembershipPlan, {
+  Membership.belongsTo(Member, {
+    foreignKey: "member_id",
+    as: "member",
+  });
+
+  MembershipPlan.hasMany(Membership, {
+    foreignKey: "membership_plan_id",
+    as: "memberships",
+  });
+  Membership.belongsTo(MembershipPlan, {
     foreignKey: "membership_plan_id",
     as: "membershipPlan",
   });

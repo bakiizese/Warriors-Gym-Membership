@@ -8,7 +8,7 @@ import {
   Jura_700Bold,
 } from "@expo-google-fonts/jura";
 
-SplashScreen.preventAutoHideAsync();
+// SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -26,11 +26,5 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="App" />
-      <Stack.Screen name="AuthPage" />
-      <Stack.Screen name="MemberDashboard" />
-    </Stack>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

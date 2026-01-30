@@ -18,6 +18,14 @@ MembershipPlan.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    ticket_amount: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    duration_days: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     fee: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -31,7 +39,7 @@ MembershipPlan.init(
       allowNull: false,
     },
   },
-  { sequelize, modelName: "membership-plan" }
+  { sequelize, modelName: "membership-plan" },
 );
 
 export default MembershipPlan;

@@ -11,7 +11,7 @@ const Weight = ({ setSelectedWeight }) => {
     (_, i) => ({
       label: `${i + startWeight}kg`,
       value: i + startWeight,
-    })
+    }),
   );
   return (
     <View className="flex-1 justify-center items-center">
