@@ -1,3 +1,4 @@
+import { Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -14,7 +15,7 @@ import phone from "../../assets/icons/phone.png";
 import payment from "../../assets/icons/payment.png";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ApiClient from "../../components/AuthPage/ApiClient";
+import ApiClient from "../../utils/ApiClient";
 import axios from "axios";
 
 const Payment = () => {
@@ -71,8 +72,13 @@ const Payment = () => {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      console.log(paymentRes.data);
+      // console.log(paymentRes.data);
+      const checkout = paymentRes.data.checkout_url;
+      console.log(checkout);
+      window.location.href = checkout;
+
       //new membership should also come here when wanting to change plans
+
       if (
         !membershipData ||
         membershipData?.membership_plan_id !== membershipPlan_id
@@ -90,7 +96,7 @@ const Payment = () => {
               headers: { Authorization: `Bearer ${token}` },
             },
           );
-          console.log(res.data);
+          // console.log(res.data);
         }
 
         const membershipRes = await ApiClient.post(
@@ -105,7 +111,7 @@ const Payment = () => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log(membershipRes.data);
+        // console.log(membershipRes.data);
       } else {
         console.log("in renew");
         console.log(membershipData);
@@ -121,7 +127,7 @@ const Payment = () => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log(membershipRes.data);
+        // console.log(membershipRes.data);
       }
 
       setReloadPage(!reloadPage);

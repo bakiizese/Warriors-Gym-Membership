@@ -73,9 +73,6 @@ memberRouter.put("/profile", member_auth, async (req, res) => {
         phone_number: updateData["phone_number"],
       });
 
-      const decoded = jwt_verify(newToken);
-      console.log("new decode", decoded);
-
       user.phone_number = updateData["phone_number"];
       user.save();
       return res.status(200).json({ token: newToken, user: user });
@@ -195,6 +192,7 @@ memberRouter.put("/membershipCancel", member_auth, async (req, res) => {
   }
 });
 
+///this should be in the admin
 memberRouter.get("/membership", member_auth, async (req, res) => {
   try {
     const memberId = req.memberId;
@@ -272,19 +270,39 @@ memberRouter.post("/payment", member_auth, async (req, res) => {
       }
     }
     paymentData.payer_id = memberId;
-    paymentData.status = "Successful";
+    paymentData.status = "Pending";
     paymentData.paid_at = String(new Date());
 
-    const creatPayment = await TransactionHistory.create(paymentData);
-    if (!creatPayment) {
+    const createPayment = await TransactionHistory.create(paymentData);
+
+    if (!createPayment) {
       return res.status(500).json({ error: "unable to create transaction" });
     }
 
     const updateUser = await Member.findOne({ where: { id: memberId } });
+
+    const userName = updateUser.full_name.split(" ");
+    const chapaPayload = {
+      payment_id: createPayment.id,
+      first_name: userName?.[0],
+      last_name: userName?.[1] || "",
+      amount: paymentData["amount"],
+      phone_number: "0941335364",
+    };
+
+    const chapa = await chapaPayment(chapaPayload);
+
+    if (!chapa) {
+      return res.status(500).json({ error: "chapa error" });
+    }
+
     updateUser.activity_status = "Active";
     updateUser.save();
 
-    return res.status(201).json({ payment: "transaction saved successfully" });
+    return res.status(201).json({
+      payment: "transaction saved successfully",
+      checkout_url: chapa,
+    });
   } catch (err) {
     console.log("Err", err);
     return res.status(500).json({ error: err });
@@ -316,5 +334,69 @@ memberRouter.get("/attendanceLog", member_auth, async (req, res) => {
     return res.status(500).json({ error: err });
   }
 });
+
+//use a different token to check, change request to POST in production
+memberRouter.get("/webhook/chapa", async (req, res) => {
+  //update payment db to be same status as the sent from chapa
+  //by calling chapa for virfication on the transaction using tx_ref
+  //make it idompotent as chapa might send multiple request to the same tx_ref
+  //first check if the tx_ref and the my id exists and if it is success....then its should be
+  //updated again and again
+  console.log("in webhook");
+  const chapaWebhook = req.body;
+  console.log(chapaWebhook);
+  return res.status(200).json({ webhook: "testing" });
+});
+
+const chapaPayment = async (chapaPayload) => {
+  console.log("in chapa");
+  var myHeaders = new Headers();
+  ///use .env for secrate key
+  ///handle error correctly
+  myHeaders.append(
+    "Authorization",
+    "Bearer CHASECK_TEST-19VF66JrpQoGAaGT573XXlwUtrxDuNxT",
+  );
+  myHeaders.append("Content-Type", "application/json");
+
+  var raw = JSON.stringify({
+    amount: chapaPayload.amount,
+    currency: "ETB",
+    first_name: chapaPayload.first_name,
+    last_name: chapaPayload.last_name,
+    phone_number: chapaPayload.phone_number,
+    tx_ref: chapaPayload.payment_id,
+    callback_url:
+      "https://readier-floy-temperately.ngrok-free.dev/member/webhook/chapa",
+    // return_url: "https://www.google.com/",
+    "customization[title]": "Membership Payment",
+    "customization[description]": "Month 2",
+    "meta[hide_receipt]": "true",
+  });
+
+  var requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow",
+  };
+
+  const ch = await fetch(
+    "https://api.chapa.co/v1/transaction/initialize",
+    requestOptions,
+  );
+
+  if (!ch.ok) {
+    console.log(ch);
+  }
+  const resultJson = await ch.json();
+
+  ///instead of returning redirect user from here
+  // return res.redirect(checkOut);
+  if (resultJson?.data?.checkout_url) {
+    const checkOut = resultJson.data.checkout_url;
+    return checkOut;
+  }
+};
 
 export default memberRouter;

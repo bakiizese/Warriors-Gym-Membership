@@ -45,7 +45,6 @@ export async function member_auth(req, res, next) {
     if (!decode) {
       return res.status(401).json({ error: "token unautherized" });
     }
-    console.log("middleware decode", decode);
     const user = await Member.findOne({ where: { id: decode.id } });
     if (!user) {
       return res.status(401).json({ error: "user unautherized" });

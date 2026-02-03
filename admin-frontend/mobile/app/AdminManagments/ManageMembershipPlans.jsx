@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import Add from "../../components/Add";
-import ApiClient from "../../components/ApiClient";
+import ApiClient from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 

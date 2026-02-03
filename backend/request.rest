@@ -92,9 +92,24 @@ post http://localhost:3000/auth/sign-in/member
 Content-Type: application/json
 
 {
-    "phone_number": "93",
+    "phone_number": "1234",
     "password": " "
 
+}
+
+###
+post http://localhost:3000/member/payment
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjQsInBob25lX251bWJlciI6IjEyMzQiLCJpYXQiOjE3NzAwOTY3Nzd9.iRNgf1eFM6dtIo68sVznSi5d8eHdCw0EwLfz0Q4KIGs
+
+{
+    "payment_method": "chapa",
+    "amount": "1500",
+    "payment_for": "Monthly Membership",
+    "membershipPlan_id": "16a5b212-ade9-4289-95b1-302f75843048",
+    "payer_id": 24,
+    "status": "test",
+    "paid_at": "2026-02-24T13:48:36.601Z"
 }
 
 ###

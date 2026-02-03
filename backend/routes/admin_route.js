@@ -240,14 +240,14 @@ adminRouter.post(
       const checkAttendance = await AttendanceLog.findAll({
         where: { member_id: member.id, membership_id: member.membership.id },
       });
-
-      const prevCheckIn = checkAttendance[checkAttendance.length - 1].check_in;
-      const prevCheckInDate = new Date(prevCheckIn);
-
-      const subs = Math.abs(checkIn - prevCheckInDate) / (1000 * 60 * 60) + 24;
-
-      if (subs < 23) {
-        return res.status(400).json({ error: "already attended today" });
+      if (checkAttendance.length > 0) {
+        const prevCheckIn =
+          checkAttendance[checkAttendance.length - 1]?.check_in;
+        const prevCheckInDate = new Date(prevCheckIn);
+        const subs = Math.abs(checkIn - prevCheckInDate) / (1000 * 60 * 60);
+        if (subs < 23) {
+          return res.status(400).json({ error: "already attended today" });
+        }
       }
 
       const attendance = await AttendanceLog.create(attendanceData);

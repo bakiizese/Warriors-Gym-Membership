@@ -5,8 +5,8 @@ import profile from "../..//assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import EditMember from "../../components/EditMember";
 import { useEffect, useState } from "react";
-import SelectLanguage from "../../components/SelectLanguage";
-import ApiClient from "../../components/AuthPage/ApiClient";
+import SelectLanguage from "../../components/AuthPage/SelectLanguage";
+import ApiClient from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
@@ -34,7 +34,7 @@ const Profile = () => {
       const res = await ApiClient.put("/member/profile", profileData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("res", res.data);
+      // console.log("res", res.data);
       if (res.data?.token) {
         await AsyncStorage.setItem("userToken", res.data?.token);
       }

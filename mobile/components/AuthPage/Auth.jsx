@@ -12,18 +12,16 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import Age from "./Age";
-import ApiClient from "./ApiClient";
-import Gender from "./Gender";
-import Height from "./Height";
+import Age from "./Attributes/Age";
+import ApiClient from "../../utils/ApiClient";
+import Gender from "./Attributes/Gender";
+import Height from "./Attributes/Height";
 import LangingPage from "./LangingPage";
-import Language from "./Language";
-import SignIn from "./SignIn";
-import SignUp from "./SignUp";
-import Weight from "./Weight";
+import Language from "./Attributes/Language";
+import SignIn from "./Signs/SignIn";
+import SignUp from "./Signs/SignUp";
+import Weight from "./Attributes/Weight";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ImageBackground } from "react-native";
-import logo from "../../assets/images/logo.png";
 import { useRouter } from "expo-router";
 
 const Auth = ({ path } = {}) => {

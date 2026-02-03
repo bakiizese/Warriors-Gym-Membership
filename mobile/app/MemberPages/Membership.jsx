@@ -13,7 +13,7 @@ import AppGradient from "../../components/AppGradient";
 import { LinearGradient } from "expo-linear-gradient";
 import dumbbell from "../../assets/icons/dumbbell.png";
 import { useEffect } from "react";
-import ApiClient from "../../components/AuthPage/ApiClient";
+import ApiClient from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useState } from "react";

@@ -14,7 +14,7 @@ import profile from "../../assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import MemberCrud from "../../components/MemberCrud";
 import SearchAndFilter from "../../components/SearchAndFilter";
-import ApiClient from "../../components/ApiClient";
+import ApiClient from "../../utils/ApiClient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 

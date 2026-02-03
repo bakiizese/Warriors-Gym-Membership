@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Image,
@@ -8,13 +8,15 @@ import {
   TouchableOpacity,
   View,
   TouchableWithoutFeedback,
+  RefreshControl,
+  ScrollView,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
 import motive_image from "../assets/images/motive-images/My turn.jpeg";
 import AppGradient from "../components/AppGradient";
-import ApiClient from "../components/AuthPage/ApiClient";
+import ApiClient from "../utils/ApiClient";
 import axios from "axios";
 import LottieView from "lottie-react-native";
 import processing from "../assets/icons/processing.json";
@@ -30,22 +32,37 @@ export default function MemberDashboard() {
   const [attendanceLog, setAttendanceLog] = useState([]);
   const [membership, setMembership] = useState();
   const [isProcess, setIsProcess] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [lineSignal, setLineSignal] = useState("");
   let token;
 
+  const onRefresh = async () => {
+    setIsProcess("");
+    setRefreshing(true);
+    await loadPage();
+    setRefreshing(false);
+  };
+
   useEffect(() => {
-    offlineData();
-    const network = NetInfo.addEventListener((state) => {
+    loadPage();
+  }, []);
+
+  const loadPage = async () => {
+    await offlineData();
+    const network = NetInfo.addEventListener(async (state) => {
       if (state.isConnected && state.isInternetReachable) {
         console.log("Working in Online Mode");
-        onlineData();
+        setLineSignal("Online");
+        await onlineData();
       } else {
         console.log("Working in Offline Mode");
-        offlineData();
+        setLineSignal("Offline");
+        await offlineData();
       }
     });
 
     return () => network();
-  }, []);
+  };
 
   const offlineData = async () => {
     setIsOffline(true);
@@ -237,24 +254,32 @@ export default function MemberDashboard() {
         );
         const remainingT = ticketAmount - attendance?.length;
 
-        setRemainingTicket([remainingT, "Tickets Left"]);
+        setRemainingTicket([remainingT, "Tks"]);
         setDaysLeft(["For", daysLeft, "Days"]);
       }
     } else {
       setDaysLeft([membership?.daysLeft, "Days Left"]);
       if (membership?.membershipPlan?.plan_type === "Ticket") {
-        setRemainingTicket([membership?.remainingTicket, "Tickets Left"]);
+        setRemainingTicket([membership?.remainingTicket, "Tks"]);
         setDaysLeft(["For", membership?.daysLeft, "Days"]);
       }
     }
   }, [membership]);
 
-  const { reload } = useLocalSearchParams();
   useFocusEffect(
     useCallback(() => {
       onlineData();
     }, []),
   );
+
+  useEffect(() => {
+    if (lineSignal !== "") {
+      const timer = setTimeout(() => {
+        setLineSignal("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lineSignal]);
 
   const checkIn = () => {
     setIsProcess("nfc");
@@ -265,204 +290,235 @@ export default function MemberDashboard() {
   return (
     <AppGradient>
       <SafeAreaView className="flex-1 relative py-5">
-        <View className="flex-1">
-          <View className="flex flex-row px-5 justify-between items-end py-1 border-b-[1px] border-[#7E7676] h-[65px]">
-            <View className="flex">
-              <Text className="text-white text-[14px] font-jura leading-none tracking-[2px]">
-                Stay, Hard...
-              </Text>
-              <Text className="text-white text-[28px] font-jura-bold leading-none tracking-[2px]">
-                Hi, {userData.full_name?.split(" ")[0]}
-              </Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                router.push({
-                  pathname: "./MemberPages/Profile",
-                  params: { userData: JSON.stringify(userData) },
-                })
-              }
-            >
-              <Image
-                source={userData.image_id ? userData.image_id : profile}
-                resizeMode="contain"
-                className="h-[60px] w-[60px] rounded-full p-2 border-[1px] border-[#00FF00]"
-              />
-            </TouchableOpacity>
-          </View>
-          <View className="bg-black h-[50px] w-full mt-3 mb-1 justify-center items-center">
-            <Text className="text-white">Attendace</Text>
-          </View>
-          <View className="mx-2">
-            <Image
-              source={motive_image}
-              resizeMode="cover"
-              className="h-[240px] w-full rounded-2xl"
-            />
-          </View>
-          {isProcess && (
-            <>
-              <TouchableWithoutFeedback onPress={() => setIsProcess("")}>
-                <View className="absolute inset-0 z-40" />
-              </TouchableWithoutFeedback>
-
-              <View
-                className={`${isProcess === "qrcode" ? "bg-[#00FF00]/70" : "bg-gray-700 rounded-full"} p-2 absolute z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
-              >
-                {isProcess === "qrcode" ? (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    className="flex-1"
-                    onPress={() => setIsProcess("nfc")}
-                  >
-                    <QRCode
-                      value={String(userData.id)}
-                      size={300}
-                      color="black"
-                      backgroundColor="white"
-                      onPress={() => setIsProcess("nfc")}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    className="flex-1"
-                    onPress={() => setIsProcess("qrcode")}
-                  >
-                    <LottieView
-                      source={processing}
-                      autoPlay
-                      loop
-                      style={{ width: 110, height: 110 }}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </>
-          )}
-          <View className="w-full flex flex-row justify-evenly my-4 gap-5">
-            <TouchableOpacity
-              activeOpacity={0.5}
-              className={`border-2 ${membership ? "border-[#00FF00]" : "bg-black/30"}  h-[50px] w-[130px] flex justify-center items-center rounded-3xl`}
-              onPress={() => checkIn()}
-              disabled={!membership}
-            >
-              <Text className="text-white text-[23px] font-jura-bold leading-none">
-                Check In
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.5}
-              className={`border-2 ${membership ? "border-[#00FF00]" : "bg-black/30"} h-[50px] w-[133px] flex justify-center items-center rounded-3xl`}
-              disabled={!membership}
-            >
-              <Text className="text-white text-[21px] font-jura-bold leading-none">
-                Check Out
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            className="flex flex-row justify-between items-center mx-3 bg-[#AC8C2D]/70 rounded-3xl p-2 px-5 mb-2"
-            onPress={() => router.push("./MemberPages/Membership")}
-          >
-            <View className="flex-1 gap-2">
-              <View className="flex flex-row items-center gap-2">
-                <Text className="text-white text-[16px] font-jura-bold leading-none">
-                  Membership
-                </Text>
-                <View className="h-[4px] w-[4px] bg-white rounded-full" />
-                <Text className="text-white text-[16px] font-jura-bold leading-none">
-                  {membership
-                    ? membership.membershipPlan?.membership_name
-                    : "None"}
-                </Text>
-              </View>
-              <View className="flex flex-row items-end gap-2">
-                {membership?.membershipPlan ? (
-                  <View className="flex flex-row items-end">
-                    {membership?.membershipPlan.plan_type === "Ticket" ? (
-                      <View className="flex flex-row items-end gap-2">
-                        <Text className="text-white text-[30px] font-jura-bold leading-none">
-                          {remainingTicket && remainingTicket?.[0]}
-                        </Text>
-                        <Text className="text-white text-[18px] font-jura-bold leading-none mb-1">
-                          {remainingTicket && remainingTicket?.[1]}
-                        </Text>
-                        <Text className="text-white text-[18px] font-jura-bold leading-none mb-1">
-                          {daysLeft?.[0]}
-                        </Text>
-                        <Text className="text-white text-[18px] font-jura-bold leading-none mb-1">
-                          {daysLeft?.[1]}
-                        </Text>
-                        <Text className="text-white text-[18px] font-jura-bold leading-none mb-1">
-                          {daysLeft?.[2]}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View className="flex flex-row gap-2 items-end">
-                        <Text className="text-white text-[30px] font-jura-bold leading-none">
-                          {daysLeft?.[0]}
-                        </Text>
-                        <Text className="text-white text-[18px] font-jura-bold leading-none mb-1">
-                          {daysLeft?.[1]}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ) : (
-                  <Text className="text-red-900 text-[15px] py-1 font-jura-bold leading-none tracking-[2px] mb-1">
-                    Select a Membership Plan
-                  </Text>
-                )}
-              </View>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              className="border-2 border-[#00FF00] bg-[#00FF00]/20 rounded-xl h-[43px] w-[85px] justify-center items-center"
-              onPress={() =>
-                membership
-                  ? router.push({
-                      pathname: "./MemberPages/Payment",
-                      params: {
-                        membershipPlan_name:
-                          membership?.membershipPlan?.membership_name,
-                        amount: membership?.membershipPlan?.fee,
-                        membershipPlan_id: membership?.membershipPlan?.id,
-                        duration_days:
-                          membership?.membershipPlan?.duration_days,
-                      },
-                    })
-                  : router.push("./MemberPages/Membership")
-              }
-            >
-              {/* show only when its about time to due payment */}
-              <Text className="text-black text-[30px] font-jura-bold leading-none mb-1">
-                Pay
-              </Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
           <View className="flex-1">
+            <View className="flex flex-row px-5 justify-between items-end py-1 border-b-[1px] border-[#7E7676] h-[65px]">
+              <View className="flex">
+                <Text className="text-white text-[14px] font-jura leading-none tracking-[2px]">
+                  Stay, Hard...
+                </Text>
+                <Text className="text-white text-[28px] font-jura-bold leading-none tracking-[2px]">
+                  Hi, {userData.full_name?.split(" ")[0]}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: "./MemberPages/Profile",
+                    params: { userData: JSON.stringify(userData) },
+                  })
+                }
+              >
+                <Image
+                  source={userData.image_id ? userData.image_id : profile}
+                  resizeMode="contain"
+                  className="h-[60px] w-[60px] rounded-full p-2 border-[1px] border-[#00FF00]"
+                />
+              </TouchableOpacity>
+            </View>
+            <View
+              className={`items-center ${lineSignal === "" ? "" : lineSignal === "Online" ? "bg-[#00FF00]/20" : "bg-gray-400"}`}
+            >
+              <Text
+                className={`${lineSignal === "Online" ? "text-[#00FF00]/70" : "text-gray-600"} text-[18px] font-jura-bold leading-6 h-[24px] tracking-[3px]`}
+              >
+                {lineSignal}
+              </Text>
+            </View>
+            <View className="bg-black h-[50px] w-full mb-1 justify-center items-center">
+              <Text className="text-white">Attendace</Text>
+            </View>
+            <View className="mx-2">
+              <Image
+                source={motive_image}
+                resizeMode="cover"
+                className="h-[240px] w-full rounded-2xl"
+              />
+            </View>
+            {isProcess && (
+              <>
+                <TouchableWithoutFeedback onPress={() => setIsProcess("")}>
+                  <View className="absolute inset-0 z-40" />
+                </TouchableWithoutFeedback>
+
+                <View
+                  className={`${isProcess === "qrcode" ? "bg-[#00FF00]/70" : "bg-gray-700 rounded-full"} p-2 absolute z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+                >
+                  {isProcess === "qrcode" ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      className="flex-1"
+                      onPress={() => setIsProcess("nfc")}
+                    >
+                      <QRCode
+                        value={String(userData.id)}
+                        size={300}
+                        color="black"
+                        backgroundColor="white"
+                        onPress={() => setIsProcess("nfc")}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      className="flex-1"
+                      onPress={() => setIsProcess("qrcode")}
+                    >
+                      <LottieView
+                        source={processing}
+                        autoPlay
+                        loop
+                        style={{ width: 110, height: 110 }}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+            {/* //this should be disabled if ticker or days are 0 */}
+            <View className="w-full flex flex-row justify-evenly my-4 gap-5">
+              <TouchableOpacity
+                activeOpacity={0.5}
+                className={`border-2 ${membership ? "border-[#00FF00]" : "bg-black/30"}  h-[50px] w-[130px] flex justify-center items-center rounded-3xl`}
+                onPress={() => checkIn()}
+                disabled={!membership}
+              >
+                <Text className="text-white text-[23px] font-jura-bold leading-none">
+                  Check In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.5}
+                className={`border-2 ${membership ? "border-[#00FF00]" : "bg-black/30"} h-[50px] w-[133px] flex justify-center items-center rounded-3xl`}
+                disabled={!membership}
+              >
+                <Text className="text-white text-[21px] font-jura-bold leading-none">
+                  Check Out
+                </Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               activeOpacity={0.7}
-              className="bg-black flex-1 mx-3 rounded-3xl justify-center items-center mb-2"
-              onPress={() => router.push("./MemberPages/Workout/WorkoutPlan")}
+              className="flex flex-row justify-between items-center mx-3 bg-[#AC8C2D]/70 rounded-3xl p-2 px-5 mb-2"
+              onPress={() => router.push("./MemberPages/Membership")}
             >
-              <Text className="text-white text-[30px] font-jura-bold leading-none">
-                Workout Plans
-              </Text>
+              <View className="flex-1 gap-2">
+                <View className="flex flex-row items-center gap-2">
+                  <Text className="text-white text-[16px] font-jura-bold leading-none">
+                    Membership
+                  </Text>
+                  <View className="h-[4px] w-[4px] bg-white rounded-full" />
+                  <Text className="text-white text-[16px] font-jura-bold leading-none">
+                    {membership
+                      ? membership.membershipPlan?.membership_name
+                      : "None"}
+                  </Text>
+                </View>
+                <View className="flex flex-row items-end gap-2">
+                  {membership?.membershipPlan ? (
+                    <View className="flex flex-row items-end">
+                      {membership?.membershipPlan.plan_type === "Ticket" ? (
+                        <View className="flex flex-row items-end gap-2">
+                          <Text
+                            className={`${remainingTicket?.[0] === 0 || daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[30px] font-jura-bold leading-none`}
+                          >
+                            {remainingTicket && remainingTicket?.[0]}
+                          </Text>
+                          <Text
+                            className={`${remainingTicket?.[0] === 0 || daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[18px] font-jura-bold leading-none mb-1`}
+                          >
+                            {remainingTicket && remainingTicket?.[1]}
+                          </Text>
+                          <Text
+                            className={`${remainingTicket?.[0] === 0 || daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[18px] font-jura-bold leading-none mb-1`}
+                          >
+                            {daysLeft?.[0]}
+                          </Text>
+                          <Text
+                            className={`${remainingTicket?.[0] === 0 || daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[18px] font-jura-bold leading-none mb-1`}
+                          >
+                            {daysLeft?.[1]}
+                          </Text>
+                          <Text
+                            className={`${remainingTicket?.[0] === 0 || daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[18px] font-jura-bold leading-none mb-1`}
+                          >
+                            {daysLeft?.[2]}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View className="flex flex-row gap-2 items-end">
+                          <Text
+                            className={`${daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[30px] font-jura-bold leading-none`}
+                          >
+                            {daysLeft?.[0]}
+                          </Text>
+                          <Text
+                            className={`${daysLeft?.[1] === 0 ? "text-red-900" : "text-white"} text-[18px] font-jura-bold leading-none mb-1`}
+                          >
+                            {daysLeft?.[1]}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <Text className="text-red-900 text-[15px] py-1 font-jura-bold leading-none tracking-[2px] mb-1">
+                      Select a Membership Plan
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="border-2 border-[#00FF00] bg-[#00FF00]/20 rounded-xl h-[43px] w-[85px] justify-center items-center"
+                onPress={() =>
+                  membership
+                    ? router.push({
+                        pathname: "./MemberPages/Payment",
+                        params: {
+                          membershipPlan_name:
+                            membership?.membershipPlan?.membership_name,
+                          amount: membership?.membershipPlan?.fee,
+                          membershipPlan_id: membership?.membershipPlan?.id,
+                          duration_days:
+                            membership?.membershipPlan?.duration_days,
+                        },
+                      })
+                    : router.push("./MemberPages/Membership")
+                }
+              >
+                {/* show only when its about time to due payment */}
+                <Text className="text-black text-[30px] font-jura-bold leading-none mb-1">
+                  Pay
+                </Text>
+              </TouchableOpacity>
             </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              className="bg-black flex-1 mx-3 rounded-3xl justify-center items-center mb-y"
-            >
-              <Text className="text-white text-[30px] font-jura-bold leading-none">
-                Programs & Plans
-              </Text>
-            </TouchableOpacity>
+            <View className=" flex-1 flex-col gap-1">
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="bg-black mx-3 flex-1 rounded-3xl justify-center items-center mb-2"
+                onPress={() => router.push("./MemberPages/Workout/WorkoutPlan")}
+              >
+                <Text className="text-white text-[30px] font-jura-bold leading-none">
+                  Workout Plans
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="bg-black mx-3 flex-1 rounded-3xl justify-center items-center"
+              >
+                <Text className="text-white text-[30px] font-jura-bold leading-none">
+                  Programs & Plans
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </AppGradient>
   );

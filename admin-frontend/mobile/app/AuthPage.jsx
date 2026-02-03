@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import arrow from "@/assets/icons/arrow.png";
 import logo from "@/assets/images/logo.png";
 import axios from "axios";
-import ApiClient from "../components/ApiClient";
+import ApiClient from "../utils/ApiClient";
 
 import {
   TextInput,

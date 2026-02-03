@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import warriors from "@/assets/images/logo.png";
 import NetInfo from "@react-native-community/netinfo";
 import axios from "axios";
-import ApiClient from "../components/AuthPage/ApiClient";
+import ApiClient from "../utils/ApiClient";
 
 const App = () => {
   const router = useRouter();
@@ -23,6 +23,7 @@ const App = () => {
         });
         network();
       } else {
+        await AsyncStorage.clear();
         router.replace("/AuthPage");
         console.log("sign-in again");
       }
@@ -31,15 +32,18 @@ const App = () => {
   }, []);
 
   const verifyOnline = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+
     try {
       const res = await ApiClient.get("/member/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res.data);
+
       if (res.data.member) {
         router.replace("/MemberDashboard");
         console.log("signed-online");
       } else {
+        await AsyncStorage.clear();
         router.replace("/AuthPage");
       }
     } catch (err) {
@@ -55,8 +59,8 @@ const App = () => {
           err.response?.status === 401
         ) {
           console.log("token error");
-          router.replace("/AuthPage");
           await AsyncStorage.clear();
+          router.replace("/AuthPage");
           return;
         }
         const backendError = err.response?.data;
@@ -68,6 +72,7 @@ const App = () => {
         console.log("An unexpected error occurred", err);
       }
       console.log("unknown error, signin-agin");
+      await AsyncStorage.clear();
       router.replace("/AuthPage");
     }
   };
