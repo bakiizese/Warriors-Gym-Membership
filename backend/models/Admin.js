@@ -31,12 +31,12 @@ Admin.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    image_id: {
-      type: DataTypes.UUID,
+    image: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },
-  { sequelize, modelName: "admin" }
+  { sequelize, modelName: "admin" },
 );
 
 export default Admin;

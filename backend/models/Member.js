@@ -49,8 +49,8 @@ Member.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    image_id: {
-      type: DataTypes.UUID,
+    image: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     workout_taken: {

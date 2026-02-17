@@ -8,6 +8,13 @@ import Membership from "../models/Membership.js";
 import AttendanceLog from "../models/AttendanceLog.js";
 import { Op } from "sequelize";
 import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
+import WorkoutPlan from "../models/WorkoutPlan.js";
+import Video from "../models/Video.js";
+import { payment } from "../utils/payment.js";
+import { addDays } from "date-fns";
+import { uploadFields } from "../utils/upload.js";
+import fs from "fs";
+import { membershipCalculate } from "../utils/logic.js";
 
 const memberRouter = express.Router();
 
@@ -25,12 +32,19 @@ memberRouter.get("/me", member_auth, async (req, res) => {
   }
 });
 
-memberRouter.put("/profile", member_auth, async (req, res) => {
+memberRouter.put("/profile", uploadFields, member_auth, async (req, res) => {
+  console.log("update");
   try {
-    const memberId = req.memberId;
-    const updateData = req.body;
-    const user = await Member.findOne({ where: { id: memberId } });
+    let filePath = "";
+    if (req.files && req.files.file) {
+      if (req.files.file[0]?.path) {
+        filePath = req.files.file[0]?.path;
+      }
+    }
 
+    const memberId = req.memberId;
+    const updateData = JSON.parse(req.body.metadata);
+    const user = await Member.findOne({ where: { id: memberId } });
     for (const key in updateData) {
       if (
         ![
@@ -38,8 +52,11 @@ memberRouter.put("/profile", member_auth, async (req, res) => {
           "createdAt",
           "updatedAt",
           "oldPassword",
+          "confirmPassword",
           "password",
           "phone_number",
+          "image",
+          "activity_status",
         ].includes(key)
       ) {
         if (user[key]) {
@@ -47,7 +64,22 @@ memberRouter.put("/profile", member_auth, async (req, res) => {
         }
       }
     }
-    if (updateData["oldPassword"] !== "") {
+    if (user.image && filePath) {
+      fs.unlink(user["image"], (err) => {
+        if (err) {
+          console.log("unable to remove image");
+        } else {
+          console.log("image removed successfully");
+          user["image"] = null;
+        }
+      });
+    }
+
+    if (typeof filePath === "string" && filePath) {
+      user["image"] = filePath;
+    }
+
+    if (updateData["oldPassword"] && updateData["oldPassword"] !== "") {
       const checkPassword = await verify_password(
         updateData["oldPassword"],
         user.password,
@@ -99,33 +131,33 @@ memberRouter.get("/membership_plans", member_auth, async (req, res) => {
 });
 
 //membership
-memberRouter.post("/membership", member_auth, async (req, res) => {
-  try {
-    const memberId = req.memberId;
-    const newData = req.body;
-    newData.member_id = memberId;
+// memberRouter.post("/membership", member_auth, async (req, res) => {
+//   try {
+//     const memberId = req.memberId;
+//     const newData = req.body;
+//     newData.member_id = memberId;
 
-    const start_date = new Date();
-    const end_date = new Date(start_date);
-    end_date.setDate(end_date.getDate() + Number(newData.duration_days));
+//     const start_date = new Date();
+//     const end_date = new Date(start_date);
+//     end_date.setDate(end_date.getDate() + Number(newData.duration_days));
 
-    newData["start_date"] = String(start_date);
-    newData["end_date"] = String(end_date);
+//     newData["start_date"] = String(start_date);
+//     newData["end_date"] = String(end_date);
 
-    delete newData.durations_days;
+//     delete newData.durations_days;
 
-    await Membership.create(newData);
-    const member = await Member.findOne({ where: { id: memberId } });
-    member.status = "Active";
-    member.save();
-    return res
-      .status(201)
-      .json({ membership: "membership created successfuly" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
-});
+//     await Membership.create(newData);
+//     const member = await Member.findOne({ where: { id: memberId } });
+//     member.status = "Active";
+//     member.save();
+//     return res
+//       .status(201)
+//       .json({ membership: "membership created successfuly" });
+//   } catch (err) {
+//     console.log(err);
+//     return res.status(500).json({ error: err });
+//   }
+// });
 
 memberRouter.put("/membershipRenew", member_auth, async (req, res) => {
   try {
@@ -192,7 +224,121 @@ memberRouter.put("/membershipCancel", member_auth, async (req, res) => {
   }
 });
 
-///this should be in the admin
+memberRouter.post("/membership/off", member_auth, async (req, res) => {
+  try {
+    let newData = req.body;
+    const memberId = req.memberId;
+
+    if (!newData.isNew) {
+      const membership = await Membership.findOne({
+        where: { id: newData.id },
+        include: { model: MembershipPlan, as: "membershipPlan" },
+      });
+
+      if (!membership) {
+        return res.status(500).json({ error: "unable to renew membership" });
+      }
+
+      const member = await Member.findOne({ where: { id: memberId } });
+
+      const currentDate = new Date();
+      const end_date = new Date(membership.end_date);
+
+      const base_date =
+        end_date > currentDate ? membership.end_date : currentDate;
+
+      membership.end_date = addDays(
+        base_date,
+        membership.membershipPlan.duration_days,
+      );
+      membership.end_date = membership.end_date.toISOString();
+
+      if (membership.membershipPlan.plan_type === "Ticket") {
+        membership.ticket =
+          membership.ticket + membership.membershipPlan.ticket_amount;
+      }
+
+      const paymentData = {
+        payer_id: memberId,
+        membershipPlan_id: membership.membership_plan_id,
+        payment_method: "Chapa",
+        amount: membership.membershipPlan.fee,
+        payment_for: membership.membershipPlan.membership_name,
+      };
+
+      const makePayment = await payment(paymentData);
+
+      if (!makePayment) {
+        console.log("error creating payment");
+        return res.status(500).json({ membership: "unsuccessful" });
+      }
+
+      membership.status = "Active";
+      member.activity_status = "Active";
+      member.save();
+      membership.save();
+
+      console.log("membership exists so renew membership");
+      return res.status(200).json({ membership: "renew success" });
+    }
+
+    console.log("membership dont exist so New membership");
+
+    const membershipCheck = await Membership.findAll({
+      where: {
+        member_id: memberId,
+        status: { [Op.in]: ["Active", "Payment Due"] },
+      },
+    });
+
+    if (membershipCheck.length > 0) {
+      for (const membership of membershipCheck) {
+        membership.status = "Inactive";
+        membership.save();
+      }
+    }
+
+    const start_date = new Date();
+    const end_date = new Date(start_date);
+
+    end_date.setDate(end_date.getDate() + Number(newData.duration_days));
+
+    const newMembershipData = {
+      member_id: memberId,
+      membership_plan_id: newData.id,
+      start_date: String(start_date),
+      end_date: String(end_date),
+      ticket: newData.ticket_amount,
+      status: "Active",
+    };
+
+    const newMembership = await Membership.create(newMembershipData);
+
+    if (!newMembership) {
+      return res.status(500).json({ error: "unable to create new membership" });
+    }
+
+    const paymentData = {
+      payer_id: memberId,
+      membershipPlan_id: newData.id,
+      payment_method: "Chapa",
+      amount: newData.fee,
+      payment_for: newData.membership_name,
+    };
+
+    const makePayment = await payment(paymentData);
+
+    if (!makePayment) {
+      console.log("error creating payment");
+      return res.status(500).json({ membership: "unsuccessful" });
+    }
+    return res.status(200).json({ membership: "new success" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
+});
+
 memberRouter.get("/membership", member_auth, async (req, res) => {
   try {
     const memberId = req.memberId;
@@ -206,44 +352,8 @@ memberRouter.get("/membership", member_auth, async (req, res) => {
     if (!membership) {
       return res.status(404).json({ error: "membership not found" });
     }
-    const member = await Member.findOne({ where: { id: memberId } });
 
-    const now = new Date();
-    // const now = new Date("2026-02-24T13:48:36.601Z");
-
-    const end = new Date(membership?.end_date);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-    const daysLeft = Math.floor((endDay - today) / (1000 * 60 * 60 * 24));
-
-    const membershipJson = membership.toJSON();
-
-    if (daysLeft <= 0) {
-      member.activity_status = "Inactive";
-      membership.status = "Inactive";
-    } else if (daysLeft < 5) {
-      member.activity_status = "Payment Due";
-      membership.status = "Payment Due";
-    }
-    if (membership.membershipPlan.plan_type === "Ticket") {
-      const attendance = await AttendanceLog.count({
-        where: { member_id: memberId, membership_id: membership.id },
-      });
-      const remainingTicket = membership.ticket - attendance;
-
-      if (remainingTicket < 3) {
-        member.activity_status = "Payment Due";
-        membership.status = "Payment Due";
-      } else if (remainingTicket <= 0) {
-        member.activity_status = "Inactive";
-        membership.status = "Inactive";
-      }
-      membershipJson.remainingTicket = remainingTicket;
-    }
-    membershipJson.daysLeft = daysLeft;
-
-    member.save();
-    membership.save();
+    const membershipJson = await membershipCalculate(membership, memberId);
 
     return res.status(200).json({ membership: membershipJson });
   } catch (err) {
@@ -253,67 +363,68 @@ memberRouter.get("/membership", member_auth, async (req, res) => {
 });
 
 //payment
-memberRouter.post("/payment", member_auth, async (req, res) => {
-  try {
-    const memberId = req.memberId;
-    let paymentData = req.body;
-    const paymentKeys = [
-      "payment_method",
-      "amount",
-      "payment_for",
-      "membershipPlan_id",
-    ];
+// memberRouter.post("/payment", member_auth, async (req, res) => {
+//   try {
+//     const memberId = req.memberId;
+//     let paymentData = req.body;
+//     const paymentKeys = [
+//       "payment_method",
+//       "amount",
+//       "payment_for",
+//       "membershipPlan_id",
+//     ];
 
-    for (const key of paymentKeys) {
-      if (!paymentData[key]) {
-        return res.status(400).json({ error: `${key} missing` });
-      }
-    }
-    paymentData.payer_id = memberId;
-    paymentData.status = "Pending";
-    paymentData.paid_at = String(new Date());
+//     for (const key of paymentKeys) {
+//       if (!paymentData[key]) {
+//         return res.status(400).json({ error: `${key} missing` });
+//       }
+//     }
+//     paymentData.payer_id = memberId;
+//     paymentData.status = "Pending";
+//     paymentData.paid_at = String(new Date());
 
-    const createPayment = await TransactionHistory.create(paymentData);
+//     const createPayment = await TransactionHistory.create(paymentData);
 
-    if (!createPayment) {
-      return res.status(500).json({ error: "unable to create transaction" });
-    }
+//     if (!createPayment) {
+//       return res.status(500).json({ error: "unable to create transaction" });
+//     }
 
-    const updateUser = await Member.findOne({ where: { id: memberId } });
+//     const updateUser = await Member.findOne({ where: { id: memberId } });
 
-    const userName = updateUser.full_name.split(" ");
-    const chapaPayload = {
-      payment_id: createPayment.id,
-      first_name: userName?.[0],
-      last_name: userName?.[1] || "",
-      amount: paymentData["amount"],
-      phone_number: "0941335364",
-    };
+//     const userName = updateUser.full_name.split(" ");
+//     const chapaPayload = {
+//       payment_id: createPayment.id,
+//       first_name: userName?.[0],
+//       last_name: userName?.[1] || "",
+//       amount: paymentData["amount"],
+//       phone_number: "0941335364",
+//     };
 
-    const chapa = await chapaPayment(chapaPayload);
+//     const chapa = await chapaPayment(chapaPayload);
 
-    if (!chapa) {
-      return res.status(500).json({ error: "chapa error" });
-    }
+//     if (!chapa) {
+//       return res.status(500).json({ error: "chapa error" });
+//     }
 
-    updateUser.activity_status = "Active";
-    updateUser.save();
+//     updateUser.activity_status = "Active";
+//     updateUser.save();
 
-    return res.status(201).json({
-      payment: "transaction saved successfully",
-      checkout_url: chapa,
-    });
-  } catch (err) {
-    console.log("Err", err);
-    return res.status(500).json({ error: err });
-  }
-});
+//     return res.status(201).json({
+//       payment: "transaction saved successfully",
+//       checkout_url: chapa,
+//     });
+//   } catch (err) {
+//     console.log("Err", err);
+//     return res.status(500).json({ error: err });
+//   }
+// });
 
 memberRouter.get("/transactions", member_auth, async (req, res) => {
   try {
     const memberId = req.memberId;
     const transactions = await TransactionHistory.findAll({
       where: { payer_id: memberId },
+      limit: 30,
     });
     return res.status(200).json({ transactions: transactions });
   } catch (err) {
@@ -327,8 +438,14 @@ memberRouter.get("/attendanceLog", member_auth, async (req, res) => {
     const memberId = req.memberId;
     const attendanceLog = await AttendanceLog.findAll({
       where: { member_id: memberId },
+      limit: 20,
     });
-    return res.status(200).json({ attendanceLog: attendanceLog });
+
+    const sorted = attendanceLog.sort(
+      (a, b) => new Date(a.check_in) - new Date(b.check_in),
+    );
+
+    return res.status(200).json({ attendanceLog: sorted });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
@@ -336,7 +453,7 @@ memberRouter.get("/attendanceLog", member_auth, async (req, res) => {
 });
 
 //use a different token to check, change request to POST in production
-memberRouter.get("/webhook/chapa", async (req, res) => {
+memberRouter.get("/webhook/chapa/off", async (req, res) => {
   //update payment db to be same status as the sent from chapa
   //by calling chapa for virfication on the transaction using tx_ref
   //make it idompotent as chapa might send multiple request to the same tx_ref
@@ -348,55 +465,26 @@ memberRouter.get("/webhook/chapa", async (req, res) => {
   return res.status(200).json({ webhook: "testing" });
 });
 
-const chapaPayment = async (chapaPayload) => {
-  console.log("in chapa");
-  var myHeaders = new Headers();
-  ///use .env for secrate key
-  ///handle error correctly
-  myHeaders.append(
-    "Authorization",
-    "Bearer CHASECK_TEST-19VF66JrpQoGAaGT573XXlwUtrxDuNxT",
-  );
-  myHeaders.append("Content-Type", "application/json");
+//workoutPlans
+memberRouter.get("/workoutPlan", member_auth, async (req, res) => {
+  try {
+    const workoutPlans = await WorkoutPlan.findAll({
+      include: { model: Video, as: "video" },
+    });
+    const len = workoutPlans.length;
+    const sorted = workoutPlans.reduce((acc, workout) => {
+      const key = workout.workout_type;
 
-  var raw = JSON.stringify({
-    amount: chapaPayload.amount,
-    currency: "ETB",
-    first_name: chapaPayload.first_name,
-    last_name: chapaPayload.last_name,
-    phone_number: chapaPayload.phone_number,
-    tx_ref: chapaPayload.payment_id,
-    callback_url:
-      "https://readier-floy-temperately.ngrok-free.dev/member/webhook/chapa",
-    // return_url: "https://www.google.com/",
-    "customization[title]": "Membership Payment",
-    "customization[description]": "Month 2",
-    "meta[hide_receipt]": "true",
-  });
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(workout);
+      return acc;
+    }, {});
 
-  var requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
-  };
-
-  const ch = await fetch(
-    "https://api.chapa.co/v1/transaction/initialize",
-    requestOptions,
-  );
-
-  if (!ch.ok) {
-    console.log(ch);
+    return res.status(200).json({ workoutPlan: sorted, length: len });
+  } catch (err) {
+    return res.status(500).json({ error: err });
   }
-  const resultJson = await ch.json();
-
-  ///instead of returning redirect user from here
-  // return res.redirect(checkOut);
-  if (resultJson?.data?.checkout_url) {
-    const checkOut = resultJson.data.checkout_url;
-    return checkOut;
-  }
-};
-
+});
 export default memberRouter;

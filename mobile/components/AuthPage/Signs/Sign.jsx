@@ -14,6 +14,7 @@ import hide_key from "@/assets/icons/hide_key.png";
 import unhide_key from "@/assets/icons/hide_key.png";
 import profile from "@/assets/icons/profile.png";
 import profileR from "@/assets/icons/profile-r.png";
+import { useTranslation } from "react-i18next";
 
 const Sign = ({
   signType,
@@ -27,6 +28,7 @@ const Sign = ({
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [isInvisible, setIsInvisible] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -93,7 +95,7 @@ const Sign = ({
       </View>
       {errorMessage && errorMessage !== "none" && (
         <Text className="text-red-600/80 text-[15px] w-72 text-center">
-          * {errorMessage}
+          * {t(`auth.${errorMessage}`)}
         </Text>
       )}
       {errorMessage === "none" && (

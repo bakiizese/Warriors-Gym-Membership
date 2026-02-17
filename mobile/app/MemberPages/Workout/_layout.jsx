@@ -5,9 +5,7 @@ import AppGradient from "../../../components/AppGradient";
 export default function WorkoutLayout() {
   return (
     <AppGradient>
-      <SafeAreaView>
-        <Stack screenOptions={{ headerShown: false }} />
-      </SafeAreaView>
+      <Stack screenOptions={{ headerShown: false }} />
     </AppGradient>
   );
 }

@@ -11,11 +11,11 @@ Video.init(
       defaultValue: DataTypes.UUIDV4,
     },
     path: {
-      type: DataTypes.JSONB,
+      type: DataTypes.STRING,
       allowNull: false,
     },
   },
-  { sequelize, modelName: "video" }
+  { sequelize, modelName: "video" },
 );
 
 export default Video;

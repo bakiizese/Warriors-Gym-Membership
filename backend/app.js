@@ -13,12 +13,20 @@ import authRouter from "./routes/auth_route.js";
 import adminRouter from "./routes/admin_route.js";
 import memberRouter from "./routes/member_route.js";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import path from "path";
 
-const PORT = 3000;
+const PORT = 5000;
 const HOST = "0.0.0.0";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 dotenv.config();
 association();
 
@@ -30,6 +38,11 @@ sequelize
 app.use("/auth", authRouter);
 app.use("/admin", adminRouter);
 app.use("/member", memberRouter);
+
+app.get("/ping", (req, res) => {
+  console.log("correct");
+  return res.status(200).json({ ping: "success" });
+});
 
 app.listen(PORT, HOST, () => console.log("server running....."));
 

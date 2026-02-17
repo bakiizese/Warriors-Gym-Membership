@@ -1,38 +1,50 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   Pressable,
   Text,
   View,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   Image,
 } from "react-native";
 import AppGradient from "../../components/AppGradient";
 import { LinearGradient } from "expo-linear-gradient";
 import dumbbell from "../../assets/icons/dumbbell.png";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import ApiClient from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const Membership = () => {
   const router = useRouter();
-  const [reloadPage, setReloadPage] = useState(true);
   const [membershipData, setMembershipData] = useState();
+  const { t } = useTranslation();
+  const [pressed, setPressed] = useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      setPressed("");
+    }, []),
+  );
 
   useEffect(() => {
+    offlineMembershipPlan();
     const fetchMembership = async () => {
       const token = await AsyncStorage.getItem("userToken");
       try {
         const res = await ApiClient.get("/member/membership_plans", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // console.log(res.data.membershipPlan);
         setMembershipData(res.data.membershipPlan);
+        await AsyncStorage.setItem(
+          "membershipPlan",
+          JSON.stringify(res.data.membershipPlan),
+        );
       } catch (err) {
+        offlineMembershipPlan();
         if (axios.isAxiosError(err)) {
           const backendError = err.response?.data;
           console.log(backendError?.error);
@@ -45,7 +57,13 @@ const Membership = () => {
       }
     };
     fetchMembership();
-  }, [reloadPage]);
+  }, []);
+
+  const offlineMembershipPlan = async () => {
+    const membershipPlan = await AsyncStorage.getItem("membershipPlan");
+    const membershipParsed = JSON.parse(membershipPlan);
+    setMembershipData(membershipParsed);
+  };
 
   return (
     <AppGradient>
@@ -55,56 +73,13 @@ const Membership = () => {
             <Ionicons name="arrow-back" size={33} color="black" />
           </Pressable>
           <Text className="text-white h-10  pl-2 leading-none text-[30px] font-jura-bold">
-            Membership Types
+            {t("membership.Membership Types")}
           </Text>
         </View>
         <View className="items-center justify-center flex-1 my-6">
-          <TouchableOpacity
-            activeOpacity={0.7}
-            disabled={true}
-            className="flex flex-row justify-between items-center mx-3 bg-[#AC8C2D]/70 rounded-3xl p-2 px-5 mb-2"
-          >
-            <View className="flex-1 gap-2">
-              <View className="flex flex-row items-center gap-2">
-                <Text className="text-white text-[16px] font-jura-bold leading-none">
-                  Membership
-                </Text>
-                <View className="h-[4px] w-[4px] bg-white rounded-full" />
-                <Text className="text-white text-[16px] font-jura-bold leading-none">
-                  None
-                </Text>
-              </View>
-              <View className="flex flex-row items-end gap-2">
-                {false ? (
-                  <>
-                    <Text className="text-white text-[35px] font-jura-bold leading-none">
-                      21
-                    </Text>
-                    <Text className="text-white text-[20px] font-jura-bold leading-none mb-1">
-                      days left
-                    </Text>
-                  </>
-                ) : (
-                  <Text className="text-red-900 text-[15px] py-1 font-jura-bold leading-none tracking-[2px] mb-1">
-                    Select a Membership Plan
-                  </Text>
-                )}
-              </View>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              disabled={true} //is toggles if selected or no
-              className="border-2 border-[#00FF00] bg-[#00FF00]/20 rounded-xl h-[43px] w-[85px] justify-center items-center"
-              onPress={() => router.push("./MemberPages/Payment")}
-            >
-              <Text className="text-black text-[30px] font-jura-bold leading-none mb-1">
-                Pay
-              </Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
           <View className="flex-1 mb-10 w-full justify-center items-center">
             <ScrollView
-              className="w-full flex-1 py-2"
+              className="w-full flex-1 py-10"
               horizontal={true}
               decelerationRate="fast"
               contentContainerClassName="px-6"
@@ -133,21 +108,50 @@ const Membership = () => {
                     </View>
                     <View className="flex-1 flex flex-col items-center p-4 w-full">
                       <Text className="text-white  my-4 leading-none text-[25px] h-10 font-jura-bold">
-                        {membershipItem.membership_name}
+                        {membershipItem.duration_days / 30}{" "}
+                        {t(`membership.${membershipItem.membership_name}`)}
                       </Text>
-                      <View className="rounded-2xl h-[48px] w-full flex flex-row justify-between items-center">
-                        <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[120px] items-center">
+                      <View className="rounded-2xl my-1 w-full flex flex-row justify-between items-center">
+                        <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
                           <Text className="text-white text-[18px] font-jura-bold">
-                            Plan type
+                            {t("membership.Plan type")}
                           </Text>
                         </View>
                         <View className="flex flex-row justify-center items-center bg-[#4CA24F] px-5 rounded-2xl">
-                          <Text className="text-white text-[23px] font-jura-bold ">
-                            {membershipItem.plan_type}
+                          <Text className="text-white text-[18px] font-jura-bold ">
+                            {t(`membership.${membershipItem.plan_type}`)}
                           </Text>
                         </View>
                       </View>
-
+                      {membershipItem.plan_type === "Ticket" && (
+                        <View className="rounded-2xl my-1 w-full flex flex-row justify-between items-center">
+                          <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
+                            <Text className="text-white text-[18px] font-jura-bold">
+                              {t("membership.Ticket amount")}
+                            </Text>
+                          </View>
+                          <View className="flex flex-row justify-center items-center bg-[#4CA24F] px-5 rounded-2xl">
+                            <Text className="text-white text-[18px] font-jura-bold ">
+                              {membershipItem.ticket_amount}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                      <View className="rounded-2xl my-1 w-full flex flex-row justify-between items-center">
+                        <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
+                          <Text className="text-white text-[18px] font-jura-bold">
+                            {t("membership.Duration days")}
+                          </Text>
+                        </View>
+                        <View className="flex flex-row justify-center items-center bg-[#4CA24F] px-5 rounded-2xl">
+                          <Text className="text-white text-[18px] font-jura-bold ">
+                            {membershipItem.duration_days}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className="text-white text-[23px] decoration: underline font-jura-bold ">
+                        {t("membership.Description")}
+                      </Text>
                       <View className="my-2 w-[90%] gap-4">
                         {membershipItem.description?.split("\n").map((item) => (
                           <Text
@@ -163,22 +167,21 @@ const Membership = () => {
                       <TouchableOpacity
                         activeOpacity={0.8}
                         className="self-center justify-center items-center bg-white h-[40px] w-[150px] rounded-full px-4"
-                        onPress={() =>
+                        onPress={() => {
+                          setPressed("payment");
                           router.push({
                             pathname: "./Payment",
+
                             params: {
-                              membershipPlan_name:
-                                membershipItem.membership_name,
-                              amount: membershipItem.fee,
-                              membershipPlan_id: membershipItem.id,
-                              duration_days: membershipItem.duration_days,
-                              ticket: membershipItem.ticket_amount,
+                              membership: null,
+                              membershipPlan: JSON.stringify(membershipItem),
                             },
-                          })
-                        }
+                          });
+                        }}
+                        disabled={pressed === "payment"}
                       >
                         <Text className="text-[#3B5793] leading-none h-[40px] text-[35px] font-jura-bold">
-                          Pay
+                          {t("membership.Pay")}
                         </Text>
                       </TouchableOpacity>
                     </View>

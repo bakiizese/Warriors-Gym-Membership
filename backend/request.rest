@@ -26,10 +26,27 @@ Content-Type: application/json
 }
 
 ###
-get http://localhost:3000/admin/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU5NjRjNjU3LTFhZjctNDBkMi05N2I5LTE4OGVhMGZjYTVjYiIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzY4ODEzMTc4fQ.gGfSQrUF5hkHU-XNGpESHVG2BGD1lzHDQQfzTiXgwDM
+post http://localhost:3000/admin/workoutPlan
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwMzEzMTQ2fQ.yn0tYzbTHMXpN0E_2aAT3P5YKaLkc9Ncy0DXygEkgnU
+
+{
+    "workout_title": "Barbell Up",
+    "workout_type": "Chest",
+    "workout_level": "2",
+    "workout_rep": 13,
+    "workout_sets": 4,
+    "workout_break": 5
+}
+
+###
+post http://localhost:3000/admin/memberAttendance/4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwNzk5NTgyfQ.s2BstTzsr3VRSNXs20V6o6z-mtB1TL4SUN5bQ0Ka8nc
 Content-Type: application/json
 
+{
+    
+}
 
 ###
 post http://localhost:3000/auth/sign-up/admin
@@ -48,14 +65,14 @@ Content-Type: application/json
 ###
 post http://localhost:3000/admin/membership_plan
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImU2MGU4ZDJiLWUwYWEtNDFlMC1iMThlLTFiNGQ3ZDIxOTRiZSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzY5NDIwNjExfQ.HKZjAxz62uUCT9NPpN4Th3ztEhcgJv5tSN1-jo-WvcU
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwNzExMDExfQ.yYJn0pQBraVNUHdVdRk4jdxgREIRfYr7EY18mi436Co
 
 {
-    "membership_name": "3 Month",
+    "membership_name": "Month",
     "plan_type": "Daily",
     "ticket_amount": 0,
     "duration_days": 90,
-    "fee": 1200,
+    "fee": 1500,
     "description": " ",
     "status": "Active"
 }
@@ -76,15 +93,15 @@ post http://localhost:3000/auth/sign-up/member
 Content-Type: application/json
 
 {
-    "full_name": "k",
+    "full_name": "Mahi",
     "phone_number": "15",
     "password": " ",
     "language": "English",
-    "gender": "Male",
-    "height": 120,
+    "gender": "Female",
+    "height": 170,
     "weight": 69,
     "age": 28,
-    "activity_status": "inactive"
+    "activity_status": "Inactive"
 }
 
 ###
@@ -92,15 +109,20 @@ post http://localhost:3000/auth/sign-in/member
 Content-Type: application/json
 
 {
-    "phone_number": "1234",
+    "phone_number": "15",
     "password": " "
 
 }
 
 ###
+get http://localhost:3000/member/workoutPlan
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmVfbnVtYmVyIjoiMTUiLCJpYXQiOjE3NzAzMTAxMzF9.C-yDWbrdlRxf_Rn6tIhEucak3K4T86aAMzAcEhPRx-A
+
+###
 post http://localhost:3000/member/payment
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjQsInBob25lX251bWJlciI6IjEyMzQiLCJpYXQiOjE3NzAwOTY3Nzd9.iRNgf1eFM6dtIo68sVznSi5d8eHdCw0EwLfz0Q4KIGs
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwMzExNzk1fQ.-NpCqdow8TEleezmftmiOeG5YsmfaU5w2woc8SwLl1I
 
 {
     "payment_method": "chapa",

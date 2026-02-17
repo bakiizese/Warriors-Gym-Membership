@@ -1,8 +1,11 @@
 import React from "react";
 import { ImageBackground, View, Text } from "react-native";
 import logo from "@/assets/images/logo.png";
+import { useTranslation } from "react-i18next";
 
 const LangingPage = () => {
+  const { t } = useTranslation();
+
   return (
     <>
       <View className="flex-1">
@@ -16,10 +19,10 @@ const LangingPage = () => {
         <View className="bg-[#FFFFFF] h-2  rounded-full" />
         <View className="">
           <Text className="text-white text-[15px] font-jura-bold">
-            Address: Tigray, Axum, Edaga Hamus
+            {t("landingPage.Address Tigray, Axum, Edaga Hamus")}
           </Text>
           <Text className="text-white text-[15px] font-jura-bold">
-            Contact: +251 938985735, +251
+            {t("landingPage.Contact")} +251 938985735, +251
           </Text>
         </View>
       </View>

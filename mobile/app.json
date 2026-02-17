@@ -39,7 +39,8 @@
         }
       ],
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "react-native-video"
     ],
     "experiments": {
       "typedRoutes": true,

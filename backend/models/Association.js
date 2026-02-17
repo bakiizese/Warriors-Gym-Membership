@@ -30,14 +30,14 @@ const association = () => {
   });
 
   //a member can only have one image and an image can only have one member - one to one
-  Image.hasOne(Member, {
-    foreignKey: "image_id",
-    as: "memberOwner",
-  });
-  Member.belongsTo(Image, {
-    foreignKey: "image_id",
-    as: "image",
-  });
+  // Image.hasOne(Member, {
+  //   foreignKey: "image_id",
+  //   as: "memberOwner",
+  // });
+  // Member.belongsTo(Image, {
+  //   foreignKey: "image_id",
+  //   as: "image",
+  // });
 
   //a member can only have one membership plan but membershiplan can many members - one to many
   // MembershipPlan.hasMany(Member, {
@@ -67,24 +67,14 @@ const association = () => {
   });
 
   //an Image can only have one Admin and an Admin can only have one Image too - one to one
-  Image.hasOne(Admin, {
-    foreignKey: "image_id",
-    as: "adminOwner",
-  });
-  Admin.belongsTo(Image, {
-    foreignKey: "image_id",
-    as: "image",
-  });
-
-  //an image can only have one workout plan and a workout plan can only have one image - one to one
-  Image.hasOne(WorkoutPlan, {
-    foreignKey: "image_id",
-    as: "workoutPlan",
-  });
-  WorkoutPlan.belongsTo(Image, {
-    foreignKey: "image_id",
-    as: "image",
-  });
+  // Image.hasOne(Admin, {
+  //   foreignKey: "image_id",
+  //   as: "adminOwner",
+  // });
+  // Admin.belongsTo(Image, {
+  //   foreignKey: "image_id",
+  //   as: "image",
+  // });
 
   //aa video can only have one workout plan and a workout plan can only have one video - one to one
   Video.hasOne(WorkoutPlan, {

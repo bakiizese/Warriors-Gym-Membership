@@ -21,6 +21,8 @@ import {
 } from "react-native";
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
+import { useTranslation } from "react-i18next";
+import { fetchUrl, getAddress } from "../utils/ApiClient";
 
 const EditMember = ({
   editData,
@@ -44,8 +46,12 @@ const EditMember = ({
     oldPassword: "",
     password: "",
     confirmPassword: "",
-    image: editData.image_id || "",
+    image: editData.image || "",
+    language: editData.language || "English",
+    gender: editData.gender || "Male",
   });
+  const ADDRESS = getAddress();
+  const { t } = useTranslation();
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -55,7 +61,13 @@ const EditMember = ({
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPersonalData((prev) => ({ ...prev, image: result.assets[0].uri }));
+      const file = result.assets[0];
+      const imageReturn = {
+        uri: file.uri || "http//:",
+        name: file.fileName || "name",
+        type: file.mimeType || "image/jpeg",
+      };
+      setPersonalData((prev) => ({ ...prev, image: imageReturn }));
       setLocalImage(result.assets[0].uri);
     }
   };
@@ -80,7 +92,7 @@ const EditMember = ({
     for (const key in personalData) {
       if (
         personalData[key] === "" &&
-        !["image", "password", "confirmPassword", "oldPassword"].includes(key)
+        !["password", "confirmPassword", "oldPassword"].includes(key)
       ) {
         console.log(key, "is missing");
         setErrorMessage(`${key} is missing`);
@@ -140,7 +152,7 @@ const EditMember = ({
           <View className="bg-black/20 h-14 w-full justify-center items-center relative">
             <TouchableOpacity
               onPress={() => setRemove(false)}
-              className="absolute h-6 w-10 top-2 right-2"
+              className="absolute h-9 w-14 top-2 right-2 justify-center items-center"
             >
               <Image
                 source={remove}
@@ -150,7 +162,7 @@ const EditMember = ({
             </TouchableOpacity>
 
             <Text className="text-white text-[30px] font-jura">
-              Profile Edit
+              {t("components.Profile Edit")}
             </Text>
           </View>
           <ScrollView className={`${isKeyboardVisible ? "h-[300px]" : ""}`}>
@@ -161,7 +173,17 @@ const EditMember = ({
                 onPress={() => pickImage()}
               >
                 <Image
-                  source={localImage ? { uri: localImage } : profile}
+                  source={
+                    localImage
+                      ? { uri: localImage }
+                      : personalData?.image
+                        ? {
+                            uri: personalData.image.includes("file://")
+                              ? personalData.image
+                              : `http://${ADDRESS}/${personalData.image}`,
+                          }
+                        : profile
+                  }
                   resizeMode="contain"
                   className="h-[110px] w-[110px] m-2 rounded-full p-2 border-[1px] border-[#00FF00]"
                 />
@@ -207,7 +229,7 @@ const EditMember = ({
               <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
                 <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[80px] items-center">
                   <Text className="text-white text-[18px] font-jura-bold">
-                    Weight
+                    {t("components.Weight")}
                   </Text>
                 </View>
                 <View className="flex flex-row justify-center items-center">
@@ -229,7 +251,7 @@ const EditMember = ({
               <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
                 <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl w-[80px] items-center">
                   <Text className="text-white text-[18px] font-jura-bold">
-                    Height
+                    {t("components.Height")}
                   </Text>
                 </View>
                 <View className="flex flex-row justify-center items-center">
@@ -251,7 +273,7 @@ const EditMember = ({
               <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
                 <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[80px] items-center">
                   <Text className="text-white text-[18px] font-jura-bold">
-                    Age
+                    {t("components.Age")}
                   </Text>
                 </View>
                 <TextInput
@@ -264,6 +286,31 @@ const EditMember = ({
                   placeholderTextColor={"#FFFFFF6E"}
                   className="text-white text-[18px] h-full font-jura"
                 />
+              </View>
+              <View className="justify-center gap-10 items-center w-full flex flex-row">
+                <TouchableOpacity
+                  className={`${personalData.gender === "Male" ? "bg-[#4CA24F]" : "bg-[#4CA24F]/50"} border-2 border-[#787878] rounded-xl px-4 h-10`}
+                  onPress={() =>
+                    setPersonalData((prev) => ({ ...prev, gender: "Male" }))
+                  }
+                >
+                  <Text className=" text-white text-[22px] font-jura-bold">
+                    {t("components.Male")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className={`${personalData.gender === "Female" ? "bg-[#4CA24F]" : "bg-[#4CA24F]/50"} border-2 border-[#787878] rounded-xl px-2 h-10`}
+                  onPress={() =>
+                    setPersonalData((prev) => ({
+                      ...prev,
+                      gender: "Female",
+                    }))
+                  }
+                >
+                  <Text className="text-white text-[22px] font-jura-bold">
+                    {t("components.Female")}
+                  </Text>
+                </TouchableOpacity>
               </View>
               <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
                 <Image source={key} resizeMode="contain" className="h-7 w-7" />
@@ -353,7 +400,7 @@ const EditMember = ({
           onPress={() => checkData()}
         >
           <Text className="text-white text-[32px] font-jura-bold leading-none">
-            Save
+            {t("components.Save")}
           </Text>
         </TouchableOpacity>
       </View>

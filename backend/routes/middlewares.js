@@ -21,6 +21,7 @@ export async function admin_auth(req, res, next) {
       return res.status(404).json({ error: "phone number missmatch" });
     }
     req.adminId = user.id;
+    req.adminName = user.full_name;
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {

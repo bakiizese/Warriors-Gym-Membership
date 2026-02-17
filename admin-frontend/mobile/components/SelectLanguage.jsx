@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 
 const SelectLanguage = ({ primary, setPrimary }) => {
@@ -10,7 +10,7 @@ const SelectLanguage = ({ primary, setPrimary }) => {
     <View className="absolute justify-center items-center z-30">
       <TouchableOpacity
         onPress={() => setLangSelector(!langSelector)}
-        className="text-xl text-center self-center  active:opacity-50 transition-opacity duration-100"
+        className="text-xl text-center self-center "
       >
         <Text className="text-white text-[24px] font-jura leading-none">
           {primary}

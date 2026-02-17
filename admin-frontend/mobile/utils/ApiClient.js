@@ -1,8 +1,11 @@
 import axios from "axios";
 
+const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+const URL = `http://${ADDRESS}/`;
+
 const ApiClient = axios.create({
-  baseURL: "http://192.168.1.8:3000/",
-  timeout: 8000,
+  baseURL: URL,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

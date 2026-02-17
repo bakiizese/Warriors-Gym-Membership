@@ -10,10 +10,11 @@ WorkoutPlan.init(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
-    image_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
+    workout_title: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
+    //allownull must be false
     video_id: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -22,15 +23,7 @@ WorkoutPlan.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    workout_detail_type: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     workout_level: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    workout_step_title: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -38,16 +31,16 @@ WorkoutPlan.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    workout_step: {
+    workout_sets: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
     workout_break: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
   },
-  { sequelize, modelName: "workout-plan" }
+  { sequelize, modelName: "workout-plan" },
 );
 
 export default WorkoutPlan;

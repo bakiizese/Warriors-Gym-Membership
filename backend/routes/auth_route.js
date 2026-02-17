@@ -29,7 +29,6 @@ const memberData = [
 export async function signUp(req, res) {
   const userType = req.params.userType;
   const userData = req.body;
-
   //check if all required data exist
   for (const key of userType === "admin" ? adminData : memberData) {
     if (!userData[key]) {
@@ -98,6 +97,8 @@ authRouter.post("/sign-in/:userType", async (req, res) => {
     id: userCheck.id,
     phone_number: userCheck.phone_number,
   });
+  userCheck.language = userData.language || "English";
+  userCheck.save();
   return res.status(200).json({ userCheck, token: token });
 });
 authRouter.post("/sign-off/:userType", async (req, res) => {

@@ -6,7 +6,7 @@ const AppGradient = ({ children }) => {
     <LinearGradient className="flex-1" colors={["#6292EB", "#EBA262"]}>
       <LinearGradient
         className="flex-1"
-        colors={["rgba(100, 93, 93, 0.7)", "rgba(115, 110, 110, 0.5)"]}
+        colors={["rgba(100, 93, 93, 0.5)", "rgba(115, 110, 110, 0.4)"]}
       >
         {children}
       </LinearGradient>

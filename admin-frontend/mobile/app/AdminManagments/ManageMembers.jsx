@@ -22,20 +22,19 @@ const ManageMembers = () => {
   const router = useRouter();
   const [addMember, setAddMember] = useState(false);
   const [membersData, setMembersData] = useState();
-  const [reloadPage, setReloadPage] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
 
   const saveMember = async (personalData) => {
     setLoading(true);
     const token = await AsyncStorage.getItem("adminToken");
-
     try {
       const res = await ApiClient.post("admin/addMember", personalData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res.data);
-      setReloadPage(!reloadPage);
+      // console.log(res.data);
+      fetchMembers();
       setAddMember(false);
       setLoading(false);
     } catch (err) {
@@ -54,33 +53,29 @@ const ManageMembers = () => {
   };
 
   useEffect(() => {
-    const fetchMembers = async () => {
-      const token = await AsyncStorage.getItem("adminToken");
-
-      try {
-        const res = await ApiClient.get("admin/members", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log("members data");
-        // console.log(
-        //   res.data.members[0].membership.membershipPlan.membership_name,
-        // );
-
-        setMembersData(res.data.members);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const backendError = err.response?.data;
-          console.log(backendError?.error);
-          console.log(err.response?.status);
-        } else if (err instanceof Error) {
-          console.log("Generic Error:", err.message);
-        } else {
-          console.log("An unexpected error occurred", err);
-        }
-      }
-    };
     fetchMembers();
-  }, [reloadPage]);
+  }, []);
+
+  const fetchMembers = async () => {
+    const token = await AsyncStorage.getItem("adminToken");
+
+    try {
+      const res = await ApiClient.get("admin/members", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMembersData(res.data.members);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
 
   const removeMember = async (memberId) => {
     const token = await AsyncStorage.getItem("adminToken");
@@ -90,7 +85,7 @@ const ManageMembers = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(res.data.member);
-      setReloadPage(!reloadPage);
+      fetchMembers();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -140,7 +135,7 @@ const ManageMembers = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        <ScrollView className="bg-[#25252A]/60 mb-10 flex-1 mx-3 rounded-xl">
+        <ScrollView className="bg-[#25252A]/60 mb-6 flex-1 mx-2 rounded-xl">
           {Array.isArray(membersData) &&
             membersData.map((item, index) => (
               <View
@@ -153,7 +148,11 @@ const ManageMembers = () => {
                       className={`${item.activity_status === "Active" ? "bg-green-800" : item.activity_status === "Payment Due" ? "bg-red-600" : "bg-gray-500"} h-2 w-14`}
                     />
                     <Image
-                      source={item.image_id ? { uri: item.image_id } : profile}
+                      source={
+                        item.image
+                          ? { uri: `http://${ADDRESS}/${item.image}` }
+                          : profile
+                      }
                       resizeMode="contain"
                       className="h-[49px] w-[49px] rounded-full p-2 border-[1px] border-[#00FF00]"
                     />

@@ -78,10 +78,10 @@ export default function AuthPage() {
       const { userCheck, token } = res.data;
 
       await AsyncStorage.setItem("adminToken", token);
-      await AsyncStorage.setItem(
-        "adminData",
-        JSON.stringify({ userCheck: userCheck }),
-      );
+      // await AsyncStorage.setItem(
+      //   "adminData",
+      //   JSON.stringify({ userCheck: userCheck }),
+      // );
 
       navigation.navigate("AdminDashboard");
 

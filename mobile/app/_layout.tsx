@@ -8,8 +8,6 @@ import {
   Jura_700Bold,
 } from "@expo-google-fonts/jura";
 
-// SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     Jura_400Regular,

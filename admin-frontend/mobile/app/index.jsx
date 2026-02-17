@@ -24,7 +24,7 @@ const App = () => {
         network();
       } else {
         console.log("signin again");
-        await AsyncStorage.clear();
+        // await AsyncStorage.clear();
         router.replace({ pathname: "/AuthPage", params: { path: 2 } });
       }
     };
@@ -32,18 +32,17 @@ const App = () => {
   }, []);
 
   const verifyOnline = async () => {
-    const token = await AsyncStorage.getItem("userToken");
+    const token = await AsyncStorage.getItem("adminToken");
 
     try {
       const res = await ApiClient.get("/admin/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (res.data.admin) {
+      if (res.data.user) {
         router.replace("/AdminDashboard");
         console.log("signed-online");
       } else {
-        await AsyncStorage.clear();
+        // await AsyncStorage.clear();
         router.replace("/AuthPage");
       }
     } catch (err) {
@@ -59,7 +58,7 @@ const App = () => {
           err.response?.status === 401
         ) {
           console.log("token error");
-          await AsyncStorage.clear();
+          // await AsyncStorage.clear();
           router.replace("/AuthPage");
           return;
         }
@@ -72,7 +71,7 @@ const App = () => {
         console.log("An unexpected error occurred", err);
       }
       console.log("unknown error, signin-agin");
-      await AsyncStorage.clear();
+      // await AsyncStorage.clear();
       router.replace("/AuthPage");
     }
   };

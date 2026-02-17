@@ -1,5 +1,5 @@
 import arrow from "@/assets/icons/arrow.png";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   ActivityIndicator,
@@ -13,16 +13,18 @@ import {
   View,
 } from "react-native";
 import Age from "./Attributes/Age";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 import Gender from "./Attributes/Gender";
 import Height from "./Attributes/Height";
 import LangingPage from "./LangingPage";
-import Language from "./Attributes/Language";
 import SignIn from "./Signs/SignIn";
 import SignUp from "./Signs/SignUp";
 import Weight from "./Attributes/Weight";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import SelectLanguage from "./SelectLanguage";
+import i18n from "../../i18n";
+import { useTranslation } from "react-i18next";
 
 const Auth = ({ path } = {}) => {
   const router = useRouter();
@@ -40,10 +42,11 @@ const Auth = ({ path } = {}) => {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingStat, setLoadingStat] = useState(false);
+  const { t } = useTranslation();
+
   const authNavigation = {
     title: [
       "Get Fit, Warrior!",
-      "Language",
       "Login",
       "Register",
       "What is your gender",
@@ -53,7 +56,6 @@ const Auth = ({ path } = {}) => {
     ],
     desc: [
       "Get started now",
-      "Please select a language",
       "Please enter your phone number and password",
       "Please enter your full name, phone number and password",
       "Please select your gender",
@@ -63,7 +65,6 @@ const Auth = ({ path } = {}) => {
     ],
     page: [
       <LangingPage />,
-      <Language setLanguage={setLanguage} language={language} />,
       <SignIn
         setPhoneNumber={setPhoneNumber}
         phoneNumber={phoneNumber}
@@ -87,7 +88,6 @@ const Auth = ({ path } = {}) => {
     ],
     buttonText: [
       "Let's Go",
-      "Continue",
       "Login",
       "Continue",
       "Continue",
@@ -96,6 +96,9 @@ const Auth = ({ path } = {}) => {
       "Finish",
     ],
   };
+  useEffect(() => {
+    i18n.changeLanguage(language);
+  }, [language]);
   const fetchLogin = () => {
     if (!phoneNumber) {
       setErrorMessage("phone number is empty");
@@ -121,18 +124,18 @@ const Auth = ({ path } = {}) => {
       const res = await ApiClient.post("auth/sign-in/member", {
         phone_number: phoneNumber,
         password: password,
+        language: language,
       });
-      const { userCheck, token } = res.data;
+      const { token } = res.data;
 
       await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem(
-        "userData",
-        JSON.stringify({ userCheck: userCheck }),
-      );
       router.replace("MemberDashboard");
       setLoadingStat(false);
       setErrorMessage("");
     } catch (error) {
+      if (!error.response) {
+        fetchUrl();
+      }
       if (axios.isAxiosError(error)) {
         const backendError = error.response?.data;
         console.log("Backend Error Message:", backendError?.error);
@@ -164,6 +167,9 @@ const Auth = ({ path } = {}) => {
       console.log("fetch regitration", res.data.user);
       requestLogin();
     } catch (err) {
+      if (!err.response) {
+        fetchUrl();
+      }
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -199,7 +205,7 @@ const Auth = ({ path } = {}) => {
     }
     const checkExistance = await checkPhone();
     if (checkExistance) {
-      setErrorMessage("user exists with this phone number");
+      setErrorMessage(checkExistance);
       return;
     }
     setErrorMessage("");
@@ -210,11 +216,18 @@ const Auth = ({ path } = {}) => {
     try {
       const res = await ApiClient.get(`/auth/sign-up/${phoneNumber}`);
       console.log(res.data);
-      return 1;
+      return "user exists with this phone number";
     } catch (err) {
+      if (!err.response) {
+        fetchUrl();
+      }
       if (axios.isAxiosError(err)) {
+        if (!err.response) {
+          setErrorMessage("backend error");
+          return "backend not responding";
+        }
         const backendError = err.response?.data;
-        console.log(backendError.error);
+        console.log(backendError);
       } else if (err instanceof Error) {
         console.log(err.message);
       } else {
@@ -235,37 +248,52 @@ const Auth = ({ path } = {}) => {
       >
         <View className="flex flex-col h-full">
           <View className="mx-7 flex flex-col gap-8">
-            <View className="flex flex-row justify-center items-end gap-2 mt-8 py-4 border-b-[2px] border-[#FFFFFF]/20">
-              <Text className="text-white text-[18px] font-jura-bold">
-                Warriors
-              </Text>
-              <View className="flex flex-row gap-2 my-[5px] items-end">
-                <View
-                  className={`${pageNumber === 0 || pageNumber === 1 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
-                <View
-                  className={`${pageNumber === 2 || pageNumber === 3 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
-                <View
-                  className={`${pageNumber === 4 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
-                <View
-                  className={`${pageNumber === 5 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
-                <View
-                  className={`${pageNumber === 6 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
-                <View
-                  className={`${pageNumber === 7 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
-                />
+            <View className="">
+              <View className="flex flex-row justify-center mt-8 py-4 items-end gap-2  border-b-[2px] border-[#FFFFFF]/20">
+                <Text className="text-white text-[18px] font-jura-bold">
+                  Warriors
+                </Text>
+                <View className="flex flex-row gap-2 my-[5px] items-end">
+                  <View
+                    className={`${pageNumber === 0 || pageNumber === 1 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                  <View
+                    className={`${pageNumber === 2 || pageNumber === 3 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                  <View
+                    className={`${pageNumber === 4 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                  <View
+                    className={`${pageNumber === 5 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                  <View
+                    className={`${pageNumber === 6 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                  <View
+                    className={`${pageNumber === 7 ? "bg-[#FFFFFF] h-2 w-[44px]" : "bg-[#FFFFFF]/20 h-[6px] w-[39px]"} rounded-full`}
+                  />
+                </View>
               </View>
+              {authNavigation.title[pageNumber] === "Login" && (
+                <View className="flex flex-row justify-between py-2">
+                  <Text className="text-white text-[26px] font-jura leading-none">
+                    {t("auth.Select Language")}
+                  </Text>
+                  <View className="bg-[#777676] p-1 px-2 rounded-md border-[1px] border-[#424141] relative h-9 w-[120px] items-center">
+                    <SelectLanguage
+                      primary={language}
+                      setPrimary={setLanguage}
+                    />
+                  </View>
+                </View>
+              )}
             </View>
             <View>
               <Text className="text-white text-[30px] font-jura-bold">
-                {authNavigation.title[pageNumber]}
+                {t(`auth.${authNavigation.title[pageNumber]}`)}
               </Text>
               <Text className="text-white text-[22px] font-jura-bold">
-                {authNavigation.desc[pageNumber]}
+                {t(`auth.${authNavigation.desc[pageNumber]}`)}
               </Text>
             </View>
           </View>
@@ -286,13 +314,13 @@ const Auth = ({ path } = {}) => {
                     authNavigation.title[pageNumber] === "What is your weight"
                   ) {
                     fetchRegister();
-                  } else if (pageNumber < 7) {
+                  } else if (pageNumber < 6) {
                     setPageNumber(pageNumber + 1);
                   }
                 }}
               >
                 <Text className="text-white text-[28px] font-jura-bold">
-                  {authNavigation.buttonText[pageNumber]}
+                  {t(`auth.${authNavigation.buttonText[pageNumber]}`)}
                 </Text>
                 {loadingStat ? (
                   <ActivityIndicator size="large" color="#FFFFFF" />
@@ -313,13 +341,13 @@ const Auth = ({ path } = {}) => {
                     }
                   }}
                 >
-                  {pageNumber !== 2 && (
+                  {pageNumber !== 1 && (
                     <Image source={arrow} className="w-8 h-7 scale-x-[-1]" />
                   )}
                   <Text className="text-white text-[28px] font-jura-bold">
-                    {pageNumber === 2 ? "Register" : "Back"}
+                    {pageNumber === 1 ? t("auth.Register") : t("auth.Back")}
                   </Text>
-                  {pageNumber === 2 && (
+                  {pageNumber === 1 && (
                     <Image source={arrow} className="w-8 h-7" />
                   )}
                 </TouchableOpacity>
