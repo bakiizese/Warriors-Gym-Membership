@@ -14,7 +14,7 @@ import profile from "../../assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import MemberCrud from "../../components/MemberCrud";
 import SearchAndFilter from "../../components/SearchAndFilter";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { fetchUrl, getAddress } from "../../utils/ApiClient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -24,9 +24,12 @@ const ManageMembers = () => {
   const [membersData, setMembersData] = useState();
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  const ADDRESS = getAddress();
 
   const saveMember = async (personalData) => {
+    fetchUrl();
+
     setLoading(true);
     const token = await AsyncStorage.getItem("adminToken");
     try {
@@ -53,16 +56,27 @@ const ManageMembers = () => {
   };
 
   useEffect(() => {
+    offlineData();
     fetchMembers();
   }, []);
 
+  const offlineData = async () => {
+    const members = await AsyncStorage.getItem("members");
+    const paresedMembers = JSON.parse(members);
+    if (paresedMembers) {
+      setMembersData(paresedMembers);
+    }
+  };
+
   const fetchMembers = async () => {
+    fetchUrl();
     const token = await AsyncStorage.getItem("adminToken");
 
     try {
       const res = await ApiClient.get("admin/members", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      await AsyncStorage.setItem("members", JSON.stringify(res.data.members));
       setMembersData(res.data.members);
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -78,13 +92,14 @@ const ManageMembers = () => {
   };
 
   const removeMember = async (memberId) => {
+    fetchUrl();
     const token = await AsyncStorage.getItem("adminToken");
 
     try {
       const res = await ApiClient.delete(`admin/member/${memberId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res.data.member);
+      // console.log(res.data.member);
       fetchMembers();
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -150,7 +165,7 @@ const ManageMembers = () => {
                     <Image
                       source={
                         item.image
-                          ? { uri: `http://${ADDRESS}/${item.image}` }
+                          ? { uri: `${ADDRESS}/${item.image}` }
                           : profile
                       }
                       resizeMode="contain"

@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import SearchAndFilter from "../../components/SearchAndFilter";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AddTransaction from "../../components/AddTransaction";
@@ -18,8 +18,18 @@ const ManagePayments = () => {
   const [errorMessage, setErrorMessage] = useState();
 
   useEffect(() => {
+    fetchUrl();
+    offlineData();
     fetchTransactions();
   }, []);
+
+  const offlineData = async () => {
+    const transactions = await AsyncStorage.getItem("transactions");
+    const paresedTransaction = JSON.parse(transactions);
+    if (paresedTransaction) {
+      setTransactionHistory(paresedTransaction);
+    }
+  };
 
   const fetchTransactions = async () => {
     const token = await AsyncStorage.getItem("adminToken");
@@ -28,11 +38,16 @@ const ManagePayments = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       // console.log(res.data.transactions);
+      await AsyncStorage.setItem(
+        "transactions",
+        JSON.stringify(res.data.transactions),
+      );
       setTransactionHistory(res.data.transactions);
     } catch (err) {
+      // fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
-        console.log(backendError?.error.message);
+        console.log(backendError?.error);
         console.log(err.response?.status);
       } else if (err instanceof Error) {
         console.log("Generic Error:", err.message);
@@ -53,7 +68,7 @@ const ManagePayments = () => {
       setAddPayment(false);
       setLoading(false);
     } catch (err) {
-      console.log(err);
+      // fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -130,7 +145,7 @@ const ManagePayments = () => {
                         {item.id}
                       </Text>
                       <Text className="text-black leading-none text-[16px]  max-w-[120px] max-h-5 font-jura text-start">
-                        {formatDate(item.createdAt)}
+                        {formatDate(item.paid_at)}
                       </Text>
                     </View>
                     <View className="h-full flex justify-center gap-4 pb-2">

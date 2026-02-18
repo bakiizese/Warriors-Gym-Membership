@@ -26,6 +26,10 @@ const AddTransaction = ({
     amount: "",
     payment_for: "",
     membershipPlan_id: "",
+    isNew: true,
+    ticket_amount: "",
+    duration_days: "",
+    membership_id: "",
   });
   const [membershipData, setMembershipData] = useState([]);
 
@@ -53,6 +57,8 @@ const AddTransaction = ({
   };
 
   useEffect(() => {
+    setErrorMessage("");
+
     const fetchMembership = async () => {
       const token = await AsyncStorage.getItem("adminToken");
       try {
@@ -75,6 +81,55 @@ const AddTransaction = ({
     };
     fetchMembership();
   }, []);
+
+  const fetchExistMembership = async () => {
+    if (!transactionData.payer_id) {
+      setErrorMessage("enter payer id first");
+      return 0;
+    }
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get(
+        `/admin/membership/${transactionData.payer_id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const fetchedData = res.data.membership;
+      setTransactionData((prev) => ({
+        ...prev,
+        amount: fetchedData.membershipPlan.fee,
+        membershipPlan_id: fetchedData.membershipPlan.id,
+        ticket_amount: fetchedData.membershipPlan.ticket_amount,
+        duration_days: fetchedData.membershipPlan.duration_days,
+        payment_for:
+          fetchedData.membershipPlan.duration_days / 30 +
+          " " +
+          fetchedData.membershipPlan.membership_name,
+        membership_id: fetchedData.id,
+      }));
+      return 1;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        if (err.response?.status === 404) {
+          if (backendError?.error === "member not found") {
+            setErrorMessage(`member ${transactionData.payer_id} not found`);
+          } else {
+            setErrorMessage("no previous membership");
+          }
+          return 0;
+        }
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      return 0;
+    }
+  };
 
   return (
     <CommonEdit
@@ -124,6 +179,34 @@ const AddTransaction = ({
               className="text-white text-[18px] h-full font-jura"
             />
           </View>
+          <View className="justify-center gap-10 items-center h-8 w-full flex flex-row">
+            <TouchableOpacity
+              className={`${transactionData.isNew ? "bg-[#00FF00]/60" : "bg-[#4CA24F]/30"} border-2 border-[#787878] rounded-xl px-4 h-10`}
+              onPress={() =>
+                setTransactionData((prev) => ({ ...prev, isNew: true }))
+              }
+            >
+              <Text className=" text-white text-[22px] font-jura-bold">
+                New
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`${!transactionData.isNew ? "bg-[#00FF00]/60" : "bg-[#4CA24F]/30"} border-2 border-[#787878] rounded-xl px-2 h-10`}
+              onPress={async () => {
+                const check = await fetchExistMembership();
+                if (check) {
+                  setTransactionData((prev) => ({
+                    ...prev,
+                    isNew: false,
+                  }));
+                }
+              }}
+            >
+              <Text className="text-white text-[22px] font-jura-bold">
+                Renew
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
             <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
               <Text className="text-white text-[18px] font-jura-bold">
@@ -157,8 +240,11 @@ const AddTransaction = ({
                             item.membership_name,
                           amount: item.fee,
                           membershipPlan_id: item.id,
+                          ticket_amount: item.ticket_amount,
+                          duration_days: item.duration_days,
                         }))
                       }
+                      disabled={!transactionData.isNew}
                     >
                       <LinearGradient
                         colors={["#2148E499", "#479AF999"]}

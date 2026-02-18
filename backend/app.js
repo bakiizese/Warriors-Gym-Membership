@@ -40,7 +40,6 @@ app.use("/admin", adminRouter);
 app.use("/member", memberRouter);
 
 app.get("/ping", (req, res) => {
-  console.log("correct");
   return res.status(200).json({ ping: "success" });
 });
 

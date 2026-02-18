@@ -15,30 +15,24 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import WorkoutCrud from "../../components/WorkoutCrud";
 import { Video } from "react-native-video";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { fetchUrl, getAddress } from "../../utils/ApiClient";
 import Thumbnail from "../../components/Thumbnail";
 
 const ManageWorkoutDetail = () => {
   const router = useRouter();
   const { workoutTitle } = useLocalSearchParams();
   const [workouts, setWorkouts] = useState([]);
-  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  const ADDRESS = getAddress();
   const [modify, setMedify] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentVideo, setCurrentVideo] = useState();
   const [showControl, setShowcontrol] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [updateData, setUpdateData] = useState();
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    console.log("refresh workout");
-    fetchWorkout();
-    setRefreshing(false);
-  };
-
   useEffect(() => {
+    fetchUrl();
     fetchWorkout();
   }, []);
 
@@ -58,7 +52,7 @@ const ManageWorkoutDetail = () => {
       setWorkouts(sorted);
       // console.log(sorted);
     } catch (err) {
-      console.log(err);
+      // fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -72,6 +66,7 @@ const ManageWorkoutDetail = () => {
   };
 
   useEffect(() => {
+    fetchUrl();
     setCurrentVideo(workouts[0]);
   }, [workouts]);
 
@@ -99,7 +94,7 @@ const ManageWorkoutDetail = () => {
       setMedify(false);
       fetchWorkout();
     } catch (err) {
-      console.log(err);
+      // fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -125,7 +120,7 @@ const ManageWorkoutDetail = () => {
       // console.log(res.data);
       fetchWorkout();
     } catch (err) {
-      console.log(err);
+      // fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -165,7 +160,7 @@ const ManageWorkoutDetail = () => {
       fetchWorkout();
       // console.log(res.data);
     } catch (err) {
-      console.log(err);
+      // fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;

@@ -12,7 +12,7 @@ import AppGradient from "../components/AppGradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
 import { useRouter } from "expo-router";
-import ApiClient from "../utils/ApiClient";
+import ApiClient, { fetchUrl, getAddress } from "../utils/ApiClient";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -36,7 +36,8 @@ const AdminDashboard = () => {
   const [scannedData, setScannedData] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  const ADDRESS = getAddress();
 
   const loadPage = async () => {
     await offlineData();
@@ -60,6 +61,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    fetchUrl();
     loadPage();
   }, []);
 
@@ -80,9 +82,13 @@ const AdminDashboard = () => {
       await AsyncStorage.getItem("paymentDueMembers");
     const parsePDMsData = JSON.parse(paymentDueMembersData);
     setPaymentDueMembers(parsePDMsData);
+
+    const attendanceCount = await AsyncStorage.getItem("attendanceCount");
+    setTodayAttendance(attendanceCount);
   };
 
   const onlineData = () => {
+    fetchUrl();
     const fetchAdminDashboard = async () => {
       try {
         const token = await AsyncStorage.getItem("adminToken");
@@ -90,7 +96,7 @@ const AdminDashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         // console.log("admin dashboard", res.data.user);
-        // await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
+        await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
         setAdminData(res.data.user);
         fetchMembersStatus();
         fetchAttendanceLog();
@@ -110,7 +116,7 @@ const AdminDashboard = () => {
             return;
           }
           const backendError = err.response?.data;
-          console.log("err", backendError?.error.message);
+          console.log("err", backendError?.error);
           console.log("err status", err.response?.status);
         } else if (err instanceof Error) {
           console.log("Generic Error:", err.message);
@@ -130,20 +136,17 @@ const AdminDashboard = () => {
       });
       // console.log("member status", res.data.members_status);
       const status = res.data.members_status;
-      // await AsyncStorage.setItem(
-      //   "activeMembers",
-      //   String(status.activeMembers),
-      // );
-      // await AsyncStorage.setItem(
-      //   "paymentDueMembers",
-      //   String(status.paymentDueMembers),
-      // );
+      await AsyncStorage.setItem("activeMembers", String(status.activeMembers));
+      await AsyncStorage.setItem(
+        "paymentDueMembers",
+        String(status.paymentDueMembers),
+      );
       setTotalActiveMembers(status.activeMembers);
       setPaymentDueMembers(status.paymentDueMembers);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
-        console.log(backendError?.error.message);
+        console.log(backendError?.error);
         console.log(err.response?.status);
       } else if (err instanceof Error) {
         console.log("Generic Error:", err.message);
@@ -157,21 +160,17 @@ const AdminDashboard = () => {
     const token = await AsyncStorage.getItem("adminToken");
 
     try {
-      const res = await ApiClient.get("admin/attendanceLog", {
+      const res = await ApiClient.get("admin/attendanceLog/today", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log("att", res.data.attendanceLog);
-      const attendanceLog = res.data.attendanceLog;
-      const now = new Date();
-      const attendance = attendanceLog.filter(
-        (item) => new Date(item.check_in).getDate() === now.getDate(),
-      );
-      // console.log(attendance);
-      setTodayAttendance(attendance.length);
+      const count = res.data.attendanceCount;
+
+      await AsyncStorage.setItem("attendanceCount", String(count));
+      setTodayAttendance(count);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
-        console.log(backendError?.error.message);
+        console.log(backendError?.error);
         console.log(err.response?.status);
       } else if (err instanceof Error) {
         console.log("Generic Error:", err.message);
@@ -313,7 +312,7 @@ const AdminDashboard = () => {
                 <Image
                   source={
                     adminData?.image
-                      ? { uri: `http://${ADDRESS}/${adminData.image}` }
+                      ? { uri: `${ADDRESS}/${adminData.image}` }
                       : profile
                   }
                   resizeMode="contain"
@@ -398,6 +397,17 @@ const AdminDashboard = () => {
                       }}
                     />
                   </View>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    className="bg-[#0e970e] self-center px-2 py-1  mt-2 rounded-2xl"
+                    onPress={() => {
+                      (setScanned(""), setScannedData(""));
+                    }}
+                  >
+                    <Text className="text-white font-jura-bold text-center text-2xl">
+                      Scan Again
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}

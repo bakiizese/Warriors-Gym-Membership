@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import Add from "../../components/AddMembership";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
@@ -19,6 +19,8 @@ const ManageMembershipPlans = () => {
   const [selectedMembership, setSelectedMembership] = useState();
 
   useEffect(() => {
+    fetchUrl();
+    offlineData();
     const fetchMembership = async () => {
       const token = await AsyncStorage.getItem("adminToken");
       try {
@@ -26,8 +28,13 @@ const ManageMembershipPlans = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const fetchedData = res.data;
+        await AsyncStorage.setItem(
+          "membershipPlan",
+          JSON.stringify(fetchedData.membershipPlan),
+        );
         setMembershipData(fetchedData.membershipPlan);
       } catch (err) {
+        // fetchUrl();
         if (axios.isAxiosError(err)) {
           const backendError = err.response?.data;
           console.log(backendError?.error);
@@ -41,6 +48,14 @@ const ManageMembershipPlans = () => {
     };
     fetchMembership();
   }, [reloadFetch]);
+
+  const offlineData = async () => {
+    const membershipPlan = await AsyncStorage.getItem("membershipPlan");
+    const parsedMembershipPlan = JSON.parse(membershipPlan);
+    if (parsedMembershipPlan) {
+      setMembershipData(parsedMembershipPlan);
+    }
+  };
 
   const save = async (saveData, membershipId = null) => {
     const token = await AsyncStorage.getItem("adminToken");
@@ -61,6 +76,7 @@ const ManageMembershipPlans = () => {
       setUpdateMembership(false);
       setReloadFetch(!reloadFetch);
     } catch (err) {
+      // fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -87,6 +103,7 @@ const ManageMembershipPlans = () => {
       console.log(res.data);
       setReloadFetch(!reloadFetch);
     } catch (err) {
+      // fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);

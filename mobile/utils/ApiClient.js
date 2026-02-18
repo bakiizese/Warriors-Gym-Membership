@@ -39,7 +39,6 @@ export const fetchUrl = async () => {
     ApiClient.defaults.baseURL = newest.message.text;
     ApiClientFile.defaults.baseURL = newest.message.text;
     Address = newest.message.text;
-    // console.log("ADDRESS-", Address);
   } catch (err) {
     console.log("ersror", err);
   }

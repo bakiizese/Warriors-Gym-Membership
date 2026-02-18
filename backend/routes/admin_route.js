@@ -13,19 +13,10 @@ import Video from "../models/Video.js";
 import fs from "fs";
 import TransactionHistory from "../models/TransactionHistory.js";
 import { membershipCalculate } from "../utils/logic.js";
+import { addDays } from "date-fns";
 
 const adminRouter = express.Router();
 
-const memberData = [
-  "full_name",
-  "phone_number",
-  "gender",
-  "height",
-  "weight",
-  "age",
-  "password",
-  "language",
-];
 const membershipKeys = [
   "membership_name",
   "plan_type",
@@ -254,8 +245,29 @@ adminRouter.delete(
 //attendance
 adminRouter.get("/attendanceLog", admin_auth, async (req, res) => {
   try {
-    const attendanceLog = await AttendanceLog.findAll();
+    const attendanceLog = await AttendanceLog.findAll({
+      limit: 30,
+      order: [["createdAt", "DESC"]],
+      include: { model: Member, as: "attendanceMember" },
+    });
     return res.status(200).json({ attendanceLog: attendanceLog });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
+});
+
+adminRouter.get("/attendanceLog/today", admin_auth, async (req, res) => {
+  try {
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 100);
+    const count = await AttendanceLog.count({
+      where: {
+        createdAt: {
+          [Op.gte]: last24Hours,
+        },
+      },
+    });
+    return res.status(200).json({ attendanceCount: count });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
@@ -315,7 +327,9 @@ adminRouter.post(
           required: true,
         },
       });
-
+      if (!membership) {
+        return res.status(404).json({ error: "membership not found" });
+      }
       const membershipCal = membershipCalculate(membership, memberId);
 
       if (membership.membershipPlan.plan_type === "Ticket") {
@@ -538,10 +552,13 @@ adminRouter.put(
 adminRouter.get("/transactions", admin_auth, async (req, res) => {
   try {
     const transactions = await TransactionHistory.findAll({
-      include: { model: Member, as: "payer" },
+      include: [{ model: Member, as: "payer" }],
+      limit: 30,
+      order: [["paid_at", "DESC"]],
     });
     return res.status(200).json({ transactions: transactions });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({ error: err });
   }
 });
@@ -557,7 +574,7 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
   try {
     const transactionData = req.body;
     const adminName = req.adminName;
-
+    console.log(transactionData);
     for (const key of transactionKeys) {
       if (!transactionData[key]) {
         return res.status(400).json({ error: `${key} missing` });
@@ -571,6 +588,72 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
       return res
         .status(400)
         .json({ error: `${transactionData.payer_id} don't exist` });
+    }
+
+    if (transactionData.isNew) {
+      const start_date = new Date();
+      const end_date = new Date(start_date);
+
+      end_date.setDate(
+        end_date.getDate() + Number(transactionData.duration_days),
+      );
+
+      const membershipCheck = await Membership.findAll({
+        where: {
+          member_id: transactionData.payer_id,
+          status: { [Op.in]: ["Active", "Payment Due"] },
+        },
+      });
+
+      if (membershipCheck.length > 0) {
+        for (const membership of membershipCheck) {
+          membership.status = "Inactive";
+          membership.save();
+        }
+      }
+
+      const newMembershipData = {
+        member_id: transactionData.payer_id,
+        membership_plan_id: transactionData.membershipPlan_id,
+        start_date: String(start_date),
+        end_date: String(end_date),
+        ticket: transactionData.ticket_amount,
+        status: "Active",
+      };
+      const membership = await Membership.create(newMembershipData);
+      if (!membership) {
+        return res.status(500).json({ error: "unable to create membership" });
+      }
+    } else {
+      if (!transactionData["membership_id"])
+        return res.status(400).json({ error: "membership id missing" });
+      const membership = await Membership.findOne({
+        where: { id: transactionData.membership_id },
+        include: { model: MembershipPlan, as: "membershipPlan" },
+      });
+
+      if (!membership) {
+        return res.status(500).json({ error: "unable to renew membership" });
+      }
+
+      const currentDate = new Date();
+      const end_date = new Date(membership.end_date);
+
+      const base_date =
+        end_date > currentDate ? membership.end_date : currentDate;
+
+      membership.end_date = addDays(
+        base_date,
+        membership.membershipPlan.duration_days,
+      );
+      membership.end_date = membership.end_date.toISOString();
+
+      if (membership.membershipPlan.plan_type === "Ticket") {
+        membership.ticket =
+          membership.ticket + membership.membershipPlan.ticket_amount;
+      }
+      membership.status = "Active";
+      membership.save();
     }
 
     transactionData.payment_method =
@@ -596,6 +679,26 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
 });
 
 //membership
-adminRouter.post("/membership", admin_auth, async (req, res) => {});
+adminRouter.get("/membership/:memberId", admin_auth, async (req, res) => {
+  try {
+    const memberId = req.params.memberId;
+    const member = await Member.findOne({ where: { id: memberId } });
+    if (!member) {
+      return res.status(404).json({ error: "member not found" });
+    }
+    const membership = await Membership.findOne({
+      where: { member_id: memberId, status: "Active" },
+      include: { model: MembershipPlan, as: "membershipPlan" },
+    });
+
+    if (!membership) {
+      return res.status(404).json({ error: "membership not found" });
+    }
+    return res.status(200).json({ membership: membership });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
+});
 
 export default adminRouter;
