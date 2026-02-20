@@ -14,6 +14,7 @@ import { payment } from "../utils/payment.js";
 import { addDays } from "date-fns";
 import { uploadFields } from "../utils/upload.js";
 import fs from "fs";
+import path from "path";
 import { membershipCalculate } from "../utils/logic.js";
 
 const memberRouter = express.Router();
@@ -474,6 +475,10 @@ memberRouter.get("/workoutPlan", member_auth, async (req, res) => {
     const len = workoutPlans.length;
     const sorted = workoutPlans.reduce((acc, workout) => {
       const key = workout.workout_type;
+
+      const videoPath = path.resolve(workout.video.path);
+      const stats = fs.statSync(videoPath);
+      workout.video.dataValues.size = stats.size;
 
       if (!acc[key]) {
         acc[key] = [];

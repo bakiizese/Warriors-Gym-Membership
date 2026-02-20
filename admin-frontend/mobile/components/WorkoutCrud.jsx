@@ -82,7 +82,7 @@ const WorkoutCrud = ({
                 source={{
                   uri: workoutData.workout_video.uri
                     ? workoutData.workout_video.uri
-                    : `http://${ADDRESS}/${workoutData.workout_video}`,
+                    : `${ADDRESS}/${workoutData.workout_video}`,
                 }}
                 resizeMode="contain"
                 style={{ width: "100%", height: "100%", overflow: "hidden" }}

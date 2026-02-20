@@ -1,6 +1,9 @@
 import arrow from "@/assets/icons/arrow.png";
-import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
@@ -12,19 +15,16 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import Age from "./Attributes/Age";
+import i18n from "../../i18n";
 import ApiClient, { fetchUrl } from "../../utils/ApiClient";
+import Age from "./Attributes/Age";
 import Gender from "./Attributes/Gender";
 import Height from "./Attributes/Height";
+import Weight from "./Attributes/Weight";
 import LangingPage from "./LangingPage";
+import SelectLanguage from "./SelectLanguage";
 import SignIn from "./Signs/SignIn";
 import SignUp from "./Signs/SignUp";
-import Weight from "./Attributes/Weight";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import SelectLanguage from "./SelectLanguage";
-import i18n from "../../i18n";
-import { useTranslation } from "react-i18next";
 
 const Auth = ({ path } = {}) => {
   const router = useRouter();
@@ -165,7 +165,7 @@ const Auth = ({ path } = {}) => {
         language: language,
       });
       console.log("fetch regitration", res.data.user);
-      requestLogin();
+      router.replace({ pathname: "/AuthPage", params: { path: 1 } });
     } catch (err) {
       if (!err.response) {
         fetchUrl();
@@ -181,7 +181,6 @@ const Auth = ({ path } = {}) => {
       }
       setErrorMessage("");
       setLoadingStat(false);
-      setPageNumber(2);
     }
   };
 

@@ -136,6 +136,7 @@ export default function MemberDashboard() {
           err.response?.status === 401
         ) {
           console.log("token error");
+          await AsyncStorage.clear();
           router.replace("/AuthPage");
           return;
         }

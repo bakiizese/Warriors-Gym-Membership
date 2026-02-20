@@ -10,6 +10,11 @@ Member.init(
       primaryKey: true,
       autoIncrement: true,
       validate: { max: 99999 },
+      get() {
+        const rawValue = this.getDataValue("id");
+        if (rawValue == null) return null;
+        return String(rawValue).padStart(5, "0");
+      },
     },
     full_name: {
       type: DataTypes.STRING,
@@ -39,7 +44,7 @@ Member.init(
     activity_status: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: "inactive",
+      defaultValue: "Inactive",
     },
     password: {
       type: DataTypes.STRING,

@@ -11,6 +11,7 @@ import WorkoutPlan from "../models/WorkoutPlan.js";
 import { uploadFields } from "../utils/upload.js";
 import Video from "../models/Video.js";
 import fs from "fs";
+import path from "path";
 import TransactionHistory from "../models/TransactionHistory.js";
 import { membershipCalculate } from "../utils/logic.js";
 import { addDays } from "date-fns";
@@ -168,7 +169,6 @@ adminRouter.get("/membership_plans", admin_auth, async (req, res) => {
 adminRouter.post("/membership_plan", admin_auth, async (req, res) => {
   try {
     const membershipData = req.body;
-    // console.log("data", membershipData);
     for (const key of membershipKeys) {
       if (!membershipData[key]) {
         if (key === "ticket_amount") {
@@ -396,9 +396,12 @@ adminRouter.get("/workouts", admin_auth, async (req, res) => {
     const workoutPlans = await WorkoutPlan.findAll({
       include: { model: Video, as: "video" },
     });
-
+    const len = workoutPlans.length;
     const sorted = workoutPlans.reduce((acc, workout) => {
       const key = workout.workout_type;
+      const videoPath = path.resolve(workout.video.path);
+      const stats = fs.statSync(videoPath);
+      workout.video.dataValues.size = stats.size;
 
       if (!acc[key]) {
         acc[key] = [];
@@ -406,8 +409,7 @@ adminRouter.get("/workouts", admin_auth, async (req, res) => {
       acc[key].push(workout);
       return acc;
     }, {});
-
-    return res.status(200).json({ workoutPlan: sorted });
+    return res.status(200).json({ workoutPlan: sorted, length: len });
   } catch (err) {
     return res.status(500).json({ error: err });
   }
@@ -574,7 +576,6 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
   try {
     const transactionData = req.body;
     const adminName = req.adminName;
-    console.log(transactionData);
     for (const key of transactionKeys) {
       if (!transactionData[key]) {
         return res.status(400).json({ error: `${key} missing` });

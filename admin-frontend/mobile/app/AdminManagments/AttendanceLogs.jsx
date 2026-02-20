@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView } from "react-native";
-import AppGradient from "../../components/AppGradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
-import { useRouter } from "expo-router";
-import SearchAndFilter from "../../components/SearchAndFilter";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 import axios from "axios";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import AppGradient from "../../components/AppGradient";
+import SearchAndFilter from "../../components/SearchAndFilter";
+import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 
 const AttendanceLogs = () => {
   const router = useRouter();
@@ -39,7 +38,8 @@ const AttendanceLogs = () => {
       );
       setAttendanceLog(res.data.attendanceLog);
     } catch (err) {
-      console.log(err);
+      fetchUrl();
+      s;
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);

@@ -15,6 +15,7 @@ import memberRouter from "./routes/member_route.js";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import path from "path";
+import cors from "cors";
 
 const PORT = 5000;
 const HOST = "0.0.0.0";
@@ -26,6 +27,9 @@ const app = express();
 app.use(express.json());
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  cors()
+);
 
 dotenv.config();
 association();

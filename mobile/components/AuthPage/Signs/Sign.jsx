@@ -66,7 +66,7 @@ const Sign = ({
         <Image source={phone} resizeMode="contain" className="h-7 w-7" />
         <TextInput
           value={phoneNumber}
-          onChangeText={(text) => setPhoneNumber(text)}
+          onChangeText={(text) => setPhoneNumber(text.replace(/\s/g, ""))}
           placeholder="Phone number"
           placeholderTextColor={"#FFFFFF6E"}
           className="text-white text-[18px] font-jura w-[90%]"

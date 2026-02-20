@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -15,8 +17,7 @@ import AppGradient from "../../components/AppGradient";
 import MemberCrud from "../../components/MemberCrud";
 import SearchAndFilter from "../../components/SearchAndFilter";
 import ApiClient, { fetchUrl, getAddress } from "../../utils/ApiClient";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Confirmation from "../../components/Confirmation";
 
 const ManageMembers = () => {
   const router = useRouter();
@@ -24,23 +25,22 @@ const ManageMembers = () => {
   const [membersData, setMembersData] = useState();
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const ADDRESS = getAddress();
+  const [confirm, setConfirm] = useState(false);
 
   const saveMember = async (personalData) => {
-    fetchUrl();
-
     setLoading(true);
     const token = await AsyncStorage.getItem("adminToken");
     try {
       const res = await ApiClient.post("admin/addMember", personalData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log(res.data);
       fetchMembers();
       setAddMember(false);
       setLoading(false);
     } catch (err) {
+      fetchUrl();
+
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -56,6 +56,8 @@ const ManageMembers = () => {
   };
 
   useEffect(() => {
+    fetchUrl();
+
     offlineData();
     fetchMembers();
   }, []);
@@ -79,6 +81,8 @@ const ManageMembers = () => {
       await AsyncStorage.setItem("members", JSON.stringify(res.data.members));
       setMembersData(res.data.members);
     } catch (err) {
+      fetchUrl();
+
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -92,16 +96,17 @@ const ManageMembers = () => {
   };
 
   const removeMember = async (memberId) => {
-    fetchUrl();
     const token = await AsyncStorage.getItem("adminToken");
 
     try {
       const res = await ApiClient.delete(`admin/member/${memberId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log(res.data.member);
       fetchMembers();
+      setConfirm(false);
     } catch (err) {
+      fetchUrl();
+
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -200,13 +205,21 @@ const ManageMembers = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="mx-3"
-                  onPress={() => removeMember(item.id)}
+                  onPress={() => setConfirm(item.id)}
                 >
                   <Image source={remove} className="h-8 w-7" />
                 </TouchableOpacity>
               </View>
             ))}
         </ScrollView>
+        {confirm && (
+          <Confirmation
+            setRemove={setConfirm}
+            title="Are you sure?"
+            content="This will delete all datas associated with this user?"
+            onConfirmed={() => removeMember(confirm)}
+          />
+        )}
         {addMember && (
           <MemberCrud
             setRemove={setAddMember}

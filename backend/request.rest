@@ -1,52 +1,25 @@
-post http://localhost:3000/auth/sign-up/admin
+post http://localhost:3000/auth/sign-up/member
 Content-Type: application/json
 
 {
-    "full_name": "Bereket Zeselassie",
-    "phone_number": "93",
+    "full_name": "bereket zeselassie",
+    "phone_number": "938792",
     "password": " ",
     "language": "eng",
-    "admin_level": "Admin",
-    "gender": "Male",
+    "admin_level": "admin",
+    "gender": "male",
     "height": 120,
     "weight": 69,
     "age": 28,
-    "activity_status": "Active"
+    "activity_status": "active"
 
 }
 
 ###
-post http://localhost:3000/auth/sign-in/admin
+get http://localhost:3000/admin/me
 Content-Type: application/json
+Authorization: Bearer asdasdasdas
 
-{
-    "phone_number": "93",
-    "password": " "
-
-}
-
-###
-post http://localhost:3000/admin/workoutPlan
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwMzEzMTQ2fQ.yn0tYzbTHMXpN0E_2aAT3P5YKaLkc9Ncy0DXygEkgnU
-
-{
-    "workout_title": "Barbell Up",
-    "workout_type": "Chest",
-    "workout_level": "2",
-    "workout_rep": 13,
-    "workout_sets": 4,
-    "workout_break": 5
-}
-
-###
-post http://localhost:3000/admin/memberAttendance/4
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwNzk5NTgyfQ.s2BstTzsr3VRSNXs20V6o6z-mtB1TL4SUN5bQ0Ka8nc
-Content-Type: application/json
-
-{
-    
-}
 
 ###
 post http://localhost:3000/auth/sign-up/admin
@@ -61,91 +34,7 @@ Content-Type: application/json
 }
 
 
-
-###
-post http://localhost:3000/admin/membership_plan
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwNzExMDExfQ.yYJn0pQBraVNUHdVdRk4jdxgREIRfYr7EY18mi436Co
-
-{
-    "membership_name": "Month",
-    "plan_type": "Daily",
-    "ticket_amount": 0,
-    "duration_days": 90,
-    "fee": 1500,
-    "description": " ",
-    "status": "Active"
-}
-
-
-
 ###
 get http://192.168.1.8:3000/admin/members
 Content-Type: application/json
-
-###
-get http://192.168.1.8:3000/admin/me
-Content-Type: application/json
-
-###
-
-post http://localhost:3000/auth/sign-up/member
-Content-Type: application/json
-
-{
-    "full_name": "Mahi",
-    "phone_number": "15",
-    "password": " ",
-    "language": "English",
-    "gender": "Female",
-    "height": 170,
-    "weight": 69,
-    "age": 28,
-    "activity_status": "Inactive"
-}
-
-###
-post http://localhost:3000/auth/sign-in/member
-Content-Type: application/json
-
-{
-    "phone_number": "15",
-    "password": " "
-
-}
-
-###
-get http://localhost:3000/member/workoutPlan
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmVfbnVtYmVyIjoiMTUiLCJpYXQiOjE3NzAzMTAxMzF9.C-yDWbrdlRxf_Rn6tIhEucak3K4T86aAMzAcEhPRx-A
-
-###
-post http://localhost:3000/member/payment
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYxNzljODk0LTdlMTMtNGU4Zi1hZDlhLWZmMjhhMDIwMTk0YSIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzcwMzExNzk1fQ.-NpCqdow8TEleezmftmiOeG5YsmfaU5w2woc8SwLl1I
-
-{
-    "payment_method": "chapa",
-    "amount": "1500",
-    "payment_for": "Monthly Membership",
-    "membershipPlan_id": "16a5b212-ade9-4289-95b1-302f75843048",
-    "payer_id": 24,
-    "status": "test",
-    "paid_at": "2026-02-24T13:48:36.601Z"
-}
-
-###
-get http://192.168.1.8:3000/member/me
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzY4ODE4Njg3fQ.DWqwvDbAh1BhDQX4H7l-0mL7-nBAAJ-QEd_XZTYKDtg
-
-###
-
-put http://localhost:3000/member/profile
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjIsInBob25lX251bWJlciI6IjkzIiwiaWF0IjoxNzY4ODE4Njg3fQ.DWqwvDbAh1BhDQX4H7l-0mL7-nBAAJ-QEd_XZTYKDtg
-
-{
-    "full_name": "bereket zese"
-}
 

@@ -1,27 +1,28 @@
+import AntDesign from "@expo/vector-icons/AntDesign";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import axios from "axios";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
-import AppGradient from "../components/AppGradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
-import { useRouter } from "expo-router";
-import ApiClient, { fetchUrl, getAddress } from "../utils/ApiClient";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppGradient from "../components/AppGradient";
 import SelectLanguage from "../components/SelectLanguage";
+import ApiClient, { fetchUrl, getAddress } from "../utils/ApiClient";
 import NFC from "../utils/NFC";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import NetInfo from "@react-native-community/netinfo";
-import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system/legacy";
 
 const AdminDashboard = () => {
   const router = useRouter();
@@ -35,9 +36,10 @@ const AdminDashboard = () => {
   const [scanned, setScanned] = useState("");
   const [scannedData, setScannedData] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadings, setLoadings] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const ADDRESS = getAddress();
+  const [pressedPage, setPressedPage] = useState("");
 
   const loadPage = async () => {
     await offlineData();
@@ -61,17 +63,22 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    setPressedPage("");
     fetchUrl();
     loadPage();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setPressedPage("");
+    }, []),
+  );
 
   const offlineData = async () => {
     console.log("in offline");
     const adminData = await AsyncStorage.getItem("adminData");
     const parseAdminData = JSON.parse(adminData);
-    if (!parseAdminData) {
-      router.replace({ pathname: "/AuthPage", params: { path: 2 } });
-    }
+
     setAdminData(parseAdminData);
 
     const activeMembersData = await AsyncStorage.getItem("activeMembers");
@@ -87,6 +94,35 @@ const AdminDashboard = () => {
     setTodayAttendance(attendanceCount);
   };
 
+  const saveFile = async (user) => {
+    const fileUri = user?.image;
+    try {
+      const filename = fileUri?.split("/").pop();
+      const localpath = FileSystem.documentDirectory + filename;
+      const checkFile = await FileSystem.getInfoAsync(localpath);
+
+      if (checkFile.exists) {
+        user.image = checkFile.uri;
+        await AsyncStorage.setItem("userData", JSON.stringify(user));
+        return checkFile.uri;
+      }
+
+      const { uri } = await FileSystem.downloadAsync(
+        `${ADDRESS}/${fileUri}`,
+        localpath,
+      );
+      console.log("uri", uri);
+      if (uri) {
+        user.image = uri;
+        await AsyncStorage.setItem("userData", JSON.stringify(user));
+      }
+      return uri;
+    } catch (err) {
+      console.log(err);
+      return 0;
+    }
+  };
+
   const onlineData = () => {
     fetchUrl();
     const fetchAdminDashboard = async () => {
@@ -95,12 +131,17 @@ const AdminDashboard = () => {
         const res = await ApiClient.get("admin/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // console.log("admin dashboard", res.data.user);
         await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
+        if (res?.data?.user?.image) {
+          setLoadings(true);
+          await saveFile(res?.data?.user);
+          setLoadings(false);
+        }
         setAdminData(res.data.user);
         fetchMembersStatus();
         fetchAttendanceLog();
       } catch (err) {
+        console.log("ee", err);
         if (axios.isAxiosError(err)) {
           if (!err.response) {
             console.log("backend not responding");
@@ -112,7 +153,7 @@ const AdminDashboard = () => {
           ) {
             console.log("token error");
             router.replace({ pathname: "/AuthPage", params: { path: 2 } });
-            // await AsyncStorage.clear();
+            await AsyncStorage.clear();
             return;
           }
           const backendError = err.response?.data;
@@ -285,6 +326,16 @@ const AdminDashboard = () => {
   return (
     <AppGradient>
       <SafeAreaView className="flex-1 p-5 relative">
+        {loadings && (
+          <View className="flex-1 bg-black/10 absolute inset-0 z-20">
+            <ActivityIndicator
+              size="large"
+              color="#FFFFFF"
+              className="flex-1"
+              style={{ transform: [{ scale: 2 }] }}
+            />
+          </View>
+        )}
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -312,7 +363,11 @@ const AdminDashboard = () => {
                 <Image
                   source={
                     adminData?.image
-                      ? { uri: `${ADDRESS}/${adminData.image}` }
+                      ? {
+                          uri: adminData?.image.includes("file://")
+                            ? adminData?.image
+                            : `${ADDRESS}/${adminData.image}`,
+                        }
                       : profile
                   }
                   resizeMode="contain"
@@ -436,7 +491,11 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() => router.push("/AdminManagments/ManageMembers")}
+                  onPress={() => {
+                    setPressedPage("ManageMembers");
+                    router.push("/AdminManagments/ManageMembers");
+                  }}
+                  disabled={pressedPage === "ManageMembers"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Manage Members
@@ -445,7 +504,11 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() => router.push("/AdminManagments/ManagePayments")}
+                  onPress={() => {
+                    setPressedPage("ManagePayments");
+                    router.push("/AdminManagments/ManagePayments");
+                  }}
+                  disabled={pressedPage === "ManagePayments"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Manage Payments
@@ -456,7 +519,11 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() => router.push("/AdminManagments/AttendanceLogs")}
+                  onPress={() => {
+                    setPressedPage("AttendanceLogs");
+                    router.push("/AdminManagments/AttendanceLogs");
+                  }}
+                  disabled={pressedPage === "AttendanceLogs"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Attendance Logs
@@ -465,9 +532,11 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() =>
-                    router.push("/AdminManagments/ManageMembershipPlans")
-                  }
+                  onPress={() => {
+                    setPressedPage("ManageMembershipPlans");
+                    router.push("/AdminManagments/ManageMembershipPlans");
+                  }}
+                  disabled={pressedPage === "ManageMembershipPlans"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Manage Membership Plans
@@ -478,9 +547,11 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() =>
-                    router.push("/AdminManagments/ManageWorkoutPlans")
-                  }
+                  onPress={() => {
+                    setPressedPage("ManageWorkoutPlans");
+                    router.push("/AdminManagments/ManageWorkoutPlans");
+                  }}
+                  disabled={pressedPage === "ManageWorkoutPlans"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Manage Workout Plans
@@ -489,9 +560,12 @@ const AdminDashboard = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
-                  onPress={() =>
-                    router.push("/AdminManagments/ProgramAndPlans")
-                  }
+                  onPress={() => {
+                    setPressedPage("ProgramAndPlans");
+
+                    router.push("/AdminManagments/ProgramAndPlans");
+                  }}
+                  disabled={pressedPage === "ProgramAndPlans"}
                 >
                   <Text className="text-white text-[25px] font-jura text-center leading-none">
                     Program & Plans

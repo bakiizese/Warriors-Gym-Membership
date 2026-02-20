@@ -1,30 +1,33 @@
-import AppGradient from "@/components/AppGradient";
-import React, { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import arrow from "@/assets/icons/arrow.png";
 import logo from "@/assets/images/logo.png";
+import AppGradient from "@/components/AppGradient";
 import axios from "axios";
-import ApiClient from "../utils/ApiClient";
+import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ApiClient, { fetchUrl } from "../utils/ApiClient";
 
 import {
-  TextInput,
-  View,
-  Image,
-  Text,
-  Keyboard,
-  ActivityIndicator,
-  TouchableOpacity,
-  ImageBackground,
-} from "react-native";
-import phone from "@/assets/icons/phone.png";
+  default as hide_key,
+  default as unhide_key,
+} from "@/assets/icons/hide_key.png";
 import key from "@/assets/icons/key.png";
-import hide_key from "@/assets/icons/hide_key.png";
-import unhide_key from "@/assets/icons/hide_key.png";
+import phone from "@/assets/icons/phone.png";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import {
+  ActivityIndicator,
+  Image,
+  ImageBackground,
+  Keyboard,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
 
 export default function AuthPage() {
-  const navigation = useNavigation();
+  const route = useRouter();
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [isInvisible, setIsInvisible] = useState(true);
@@ -34,6 +37,8 @@ export default function AuthPage() {
   const [loadingStat, setLoadingStat] = useState(false);
 
   useEffect(() => {
+    fetchUrl();
+
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       () => setKeyboardVisible(true),
@@ -78,16 +83,13 @@ export default function AuthPage() {
       const { userCheck, token } = res.data;
 
       await AsyncStorage.setItem("adminToken", token);
-      // await AsyncStorage.setItem(
-      //   "adminData",
-      //   JSON.stringify({ userCheck: userCheck }),
-      // );
 
-      navigation.navigate("AdminDashboard");
+      route.replace("/AdminDashboard");
 
       setLoadingStat(false);
       setErrorMessage("");
     } catch (error) {
+      fetchUrl();
       if (axios.isAxiosError(error)) {
         const backendError = error.response?.data;
         console.log("Backend Error Message:", backendError?.error);

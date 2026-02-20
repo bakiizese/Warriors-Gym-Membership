@@ -23,8 +23,6 @@ export const ApiClientFile = axios.create({
 
 export const fetchUrl = async () => {
   console.log("in fetch url");
-  // const local = checkLocal();
-  // if (local) return;
   const warriorsBotUrl =
     "https://api.telegram.org/bot8500601631:AAH1LSJicDMQc1eUoYs9XOcxCtIdIey_w1c/getUpdates";
 

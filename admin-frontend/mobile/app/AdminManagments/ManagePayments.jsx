@@ -1,14 +1,19 @@
-import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import AppGradient from "../../components/AppGradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import AddTransaction from "../../components/AddTransaction";
+import AppGradient from "../../components/AppGradient";
 import SearchAndFilter from "../../components/SearchAndFilter";
 import ApiClient, { fetchUrl } from "../../utils/ApiClient";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import AddTransaction from "../../components/AddTransaction";
 
 const ManagePayments = () => {
   const router = useRouter();
@@ -37,14 +42,13 @@ const ManagePayments = () => {
       const res = await ApiClient.get("/admin/transactions", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log(res.data.transactions);
       await AsyncStorage.setItem(
         "transactions",
         JSON.stringify(res.data.transactions),
       );
       setTransactionHistory(res.data.transactions);
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -68,7 +72,7 @@ const ManagePayments = () => {
       setAddPayment(false);
       setLoading(false);
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);

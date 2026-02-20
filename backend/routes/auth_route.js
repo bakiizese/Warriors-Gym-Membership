@@ -27,6 +27,7 @@ const memberData = [
 ];
 
 export async function signUp(req, res) {
+
   const userType = req.params.userType;
   const userData = req.body;
   //check if all required data exist

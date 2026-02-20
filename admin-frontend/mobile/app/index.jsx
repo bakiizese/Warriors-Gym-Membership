@@ -1,10 +1,10 @@
 import warriors from "@/assets/images/logo.png";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ImageBackground, View } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
-import axios from "axios";
 import ApiClient from "../utils/ApiClient";
 
 const App = () => {
@@ -24,7 +24,7 @@ const App = () => {
         network();
       } else {
         console.log("signin again");
-        // await AsyncStorage.clear();
+        await AsyncStorage.clear();
         router.replace({ pathname: "/AuthPage", params: { path: 2 } });
       }
     };
@@ -41,13 +41,9 @@ const App = () => {
       if (res.data.user) {
         router.replace("/AdminDashboard");
         console.log("signed-online");
-      } else {
-        // await AsyncStorage.clear();
-        router.replace("/AuthPage");
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        console.log(err);
         if (!err.response) {
           console.log("backend not responding");
           router.replace("/AdminDashboard");
@@ -58,7 +54,7 @@ const App = () => {
           err.response?.status === 401
         ) {
           console.log("token error");
-          // await AsyncStorage.clear();
+          await AsyncStorage.clear();
           router.replace("/AuthPage");
           return;
         }
@@ -71,8 +67,6 @@ const App = () => {
         console.log("An unexpected error occurred", err);
       }
       console.log("unknown error, signin-agin");
-      // await AsyncStorage.clear();
-      router.replace("/AuthPage");
     }
   };
   return (

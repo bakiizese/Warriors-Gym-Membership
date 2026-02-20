@@ -35,7 +35,6 @@ const Workout = () => {
   const { t } = useTranslation();
   const [counterLoad, setCounterLoad] = useState(0);
   const [pressed, setPressed] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
   const workoutRoute = {
     upperBody: [
@@ -179,7 +178,7 @@ const Workout = () => {
       const localpath = FileSystem.documentDirectory + filename;
       const checkFile = await FileSystem.getInfoAsync(localpath);
 
-      if (checkFile.exists) {
+      if (checkFile.exists && fileUri.size === checkFile.size) {
         // console.log("file exists -size -", checkFile.size);
         return checkFile.uri;
       }
@@ -214,25 +213,6 @@ const Workout = () => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchlocalall = async () => {
-  //     try {
-  //       const files = await FileSystem.readDirectoryAsync(
-  //         FileSystem.documentDirectory,
-  //       );
-  //       // console.log("files", files);
-  //       for (const key of files) {
-  //         if (key.includes(".mp4")) {
-  //           console.log(key);
-  //         }
-  //       }
-  //     } catch (err) {
-  //       console.log("eeeeeeeee", err);
-  //     }
-  //   };
-  //   fetchlocalall();
-  // }, []);
-
   const fetchOffline = async (offlineData = null, size = null) => {
     if (offlineData) {
       const margin = 100 / size;
@@ -244,7 +224,6 @@ const Workout = () => {
           const localUri = await saveFile(item.video);
           if (localUri) item.video.path = localUri;
           counter = counter + margin;
-          // console.log("counter - ", counter);
           setCounterLoad(counter);
         });
         promises.push(...savedFile);
@@ -258,7 +237,6 @@ const Workout = () => {
     } else {
       console.log("in offlineee");
       const workouts = await AsyncStorage.getItem("workoutData");
-      const size = await AsyncStorage.getItem("workoutDataSize");
 
       const pasredWorkouts = JSON.parse(workouts);
       setWorkoutData(pasredWorkouts);

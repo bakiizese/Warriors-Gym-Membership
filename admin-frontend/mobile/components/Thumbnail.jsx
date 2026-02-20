@@ -4,18 +4,24 @@ import { View, Image, Text } from "react-native";
 
 const Thumbnail = ({ videoUri }) => {
   const [thumbnail, setThumbnail] = useState(null);
-  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
-
-  useEffect(() => {
+  try {
+    useEffect(() => {
+      genThumbnail();
+    }, []);
     const genThumbnail = async () => {
-      const newVideoUri = `http://${ADDRESS}/${videoUri}`;
+      if (!videoUri.includes("file://")) {
+        setThumbnail(null);
+        return;
+      }
+      const newVideoUri = videoUri;
       const { uri } = await VideoThumbnails.getThumbnailAsync(newVideoUri, {
         time: 500,
       });
       setThumbnail(uri);
     };
-    genThumbnail();
-  }, []);
+  } catch {
+    setThumbnail(null);
+  }
 
   return (
     <View className="h-full w-full rounded-3xl justify-center items-center">

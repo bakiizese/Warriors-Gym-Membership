@@ -1,69 +1,45 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import * as FileSystem from "expo-file-system/legacy";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  View,
+  Pressable,
+  ScrollView,
   Text,
   TouchableOpacity,
-  ScrollView,
-  RefreshControl,
-  Image,
+  View,
 } from "react-native";
-import AppGradient from "../../components/AppGradient";
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import WorkoutCrud from "../../components/WorkoutCrud";
 import { Video } from "react-native-video";
-import ApiClient, { fetchUrl, getAddress } from "../../utils/ApiClient";
+import AppGradient from "../../components/AppGradient";
+import Confirmation from "../../components/Confirmation";
 import Thumbnail from "../../components/Thumbnail";
+import WorkoutCrud from "../../components/WorkoutCrud";
+import ApiClient, { fetchUrl, getAddress } from "../../utils/ApiClient";
 
 const ManageWorkoutDetail = () => {
   const router = useRouter();
-  const { workoutTitle } = useLocalSearchParams();
+  const { workoutTitle, workoutData } = useLocalSearchParams();
   const [workouts, setWorkouts] = useState([]);
-  // const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const ADDRESS = getAddress();
-  const [modify, setMedify] = useState(false);
+  const [modify, setModify] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentVideo, setCurrentVideo] = useState();
   const [showControl, setShowcontrol] = useState(false);
   const [updateData, setUpdateData] = useState();
+  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
-    fetchUrl();
-    fetchWorkout();
-  }, []);
-
-  const fetchWorkout = async () => {
-    const token = await AsyncStorage.getItem("adminToken");
-    try {
-      const res = await ApiClient.get(`/admin/workout/${workoutTitle}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const fetchedWorkout = res.data.workout;
-      let sorted = [];
-      if (fetchedWorkout[workoutTitle]) {
-        sorted = fetchedWorkout[workoutTitle].sort(
-          (a, b) => Number(a.workout_level) - Number(b.workout_level),
-        );
-      }
+    if (workoutData) {
+      const parsed = JSON.parse(workoutData);
+      const sorted = parsed.sort(
+        (a, b) => Number(a.workout_level) - Number(b.workout_level),
+      );
       setWorkouts(sorted);
-      // console.log(sorted);
-    } catch (err) {
-      // fetchUrl();
-      if (axios.isAxiosError(err)) {
-        const backendError = err.response?.data;
-        console.log(backendError?.error);
-        console.log(err.response?.status);
-      } else if (err instanceof Error) {
-        console.log("Generic Error:", err.message);
-      } else {
-        console.log("An unexpected error occurred", err);
-      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUrl();
@@ -80,21 +56,18 @@ const ManageWorkoutDetail = () => {
     formData.append("file", file);
     formData.append("metadata", JSON.stringify(updateWorkoutData));
     try {
-      const res = await axios.put(
-        `http://${ADDRESS}/admin/workoutUpdate`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await axios.put(`${ADDRESS}/admin/workoutUpdate`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       setLoading(false);
-      setMedify(false);
-      fetchWorkout();
+      setModify(false);
+      router.replace("./ManageWorkoutPlans");
     } catch (err) {
-      // fetchUrl();
+      console.log("eee", err);
+      fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -117,10 +90,10 @@ const ManageWorkoutDetail = () => {
       const res = await ApiClient.delete(`/admin/workoutRemove/${workoutId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log(res.data);
-      fetchWorkout();
+      setConfirm(false);
+      router.replace("./ManageWorkoutPlans");
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -145,22 +118,17 @@ const ManageWorkoutDetail = () => {
     formData.append("metadata", JSON.stringify(saveWorkoutData));
 
     try {
-      const res = await axios.post(
-        `http://${ADDRESS}/admin/workout`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await axios.post(`${ADDRESS}/admin/workout`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       setLoading(false);
-      setMedify(false);
-      fetchWorkout();
-      // console.log(res.data);
+      setModify(false);
+      router.replace("./ManageWorkoutPlans");
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       setLoading(false);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -177,9 +145,19 @@ const ManageWorkoutDetail = () => {
     }
   };
 
+  const deleteFile = async (uri) => {
+    console.log("in delete");
+    try {
+      setShowThumbnail(false);
+      await FileSystem.deleteAsync(uri);
+    } catch {
+      console.log("alredy deleted");
+    }
+  };
+
   return (
     <AppGradient>
-      <View className="flex-1">
+      <View className="flex-1 relative">
         <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
           <Pressable onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={33} color="black" />
@@ -188,12 +166,13 @@ const ManageWorkoutDetail = () => {
             Manage {workoutTitle} Workout
           </Text>
         </View>
+
         <View className="w-full flex flex-row justify-end px-6 mt-2">
           <TouchableOpacity
             activeOpacity={0.8}
             className="bg-[#56C556] rounded-[25px] py-3 px-4 items-center justify-center"
             onPress={() => {
-              (setMedify("add"), setUpdateData(currentVideo));
+              (setModify("add"), setUpdateData(currentVideo));
             }}
           >
             <Text className="text-white leading-none text-[20px] font-jura text-center">
@@ -201,15 +180,16 @@ const ManageWorkoutDetail = () => {
             </Text>
           </TouchableOpacity>
         </View>
+
         {workouts.length > 0 && currentVideo && (
           <View className="flex-1">
             <View className="w-full h-[42%] p-2 px-1 border-b-[1px] border-black relative">
               <View className="flex-1 bg-black rounded-2xl justify-center items-center ">
-                {currentVideo?.video?.path ? (
+                {currentVideo?.video?.path.includes("file://") ? (
                   <>
                     <Video
                       source={{
-                        uri: `http://${ADDRESS}/${currentVideo?.video?.path}`,
+                        uri: currentVideo?.video?.path,
                       }}
                       style={{
                         width: "100%",
@@ -221,8 +201,9 @@ const ManageWorkoutDetail = () => {
                       paused={false}
                       controls={showControl}
                       repeat
-                      onError={(err) => console.log("video error", err)}
+                      onError={() => deleteFile(currentVideo.video.path)}
                     />
+
                     {!showControl && (
                       <TouchableOpacity
                         activeOpacity={0.7}
@@ -259,7 +240,7 @@ const ManageWorkoutDetail = () => {
                     activeOpacity={0.7}
                     className="bg-[#aaa1a1] p-1 px-2 rounded-md"
                     onPress={() => {
-                      (setMedify("edit"), setUpdateData(currentVideo));
+                      (setModify("edit"), setUpdateData(currentVideo));
                     }}
                   >
                     <Text className="text-white font-jura-bold text-[19px] leading-none text-center">
@@ -269,7 +250,7 @@ const ManageWorkoutDetail = () => {
                   <TouchableOpacity
                     activeOpacity={0.7}
                     className="bg-[#B81B1B] p-1 px-2 rounded-md"
-                    onPress={() => deleteWorkout(currentVideo.id)}
+                    onPress={() => setConfirm(currentVideo.id)}
                   >
                     <Text className="text-white font-jura-bold text-[19px] leading-none text-center">
                       Delete
@@ -317,7 +298,7 @@ const ManageWorkoutDetail = () => {
                         activeOpacity={0.7}
                         className="bg-[#aaa1a1] p-1 px-2 rounded-md"
                         onPress={() => {
-                          (setMedify("edit"), setUpdateData(item));
+                          (setModify("edit"), setUpdateData(item));
                         }}
                       >
                         <Text className="text-white font-jura-bold text-[19px] leading-none text-center">
@@ -327,7 +308,7 @@ const ManageWorkoutDetail = () => {
                       <TouchableOpacity
                         activeOpacity={0.7}
                         className="bg-[#B81B1B] p-1 px-2 rounded-md"
-                        onPress={() => deleteWorkout(item.id)}
+                        onPress={() => setConfirm(item.id)}
                       >
                         <Text className="text-white font-jura-bold text-[19px] leading-none text-center">
                           Delete
@@ -339,11 +320,19 @@ const ManageWorkoutDetail = () => {
             </ScrollView>
           </View>
         )}
+        {confirm && (
+          <Confirmation
+            setRemove={setConfirm}
+            title="?"
+            content="Are you sure you want to delete this?"
+            onConfirmed={() => deleteWorkout(confirm)}
+          />
+        )}
         {modify &&
           (modify === "add" ? (
             <WorkoutCrud
               type="Add Workout"
-              setRemove={setMedify}
+              setRemove={setModify}
               save={uploadWorkout}
               errorMessage={errorMessage}
               setErrorMessage={setErrorMessage}
@@ -353,7 +342,7 @@ const ManageWorkoutDetail = () => {
           ) : (
             <WorkoutCrud
               type="Edit Workout"
-              setRemove={setMedify}
+              setRemove={setModify}
               save={updateWorkout}
               errorMessage={errorMessage}
               setErrorMessage={setErrorMessage}

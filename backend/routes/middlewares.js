@@ -6,6 +6,7 @@ export async function admin_auth(req, res, next) {
   try {
     const header = req.headers.authorization;
     const token = header?.split(" ")[1];
+
     if (!token) {
       return res.status(401).json({ error: "token missing" });
     }

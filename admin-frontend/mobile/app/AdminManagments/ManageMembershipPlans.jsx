@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import AppGradient from "../../components/AppGradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
-import { useRouter } from "expo-router";
-import Add from "../../components/AddMembership";
-import ApiClient, { fetchUrl } from "../../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Add from "../../components/AddMembership";
+import AppGradient from "../../components/AppGradient";
+import ApiClient, { fetchUrl } from "../../utils/ApiClient";
+import Confirmation from "../../components/Confirmation";
 
 const ManageMembershipPlans = () => {
   const router = useRouter();
@@ -17,6 +23,7 @@ const ManageMembershipPlans = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedMembership, setSelectedMembership] = useState();
+  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
     fetchUrl();
@@ -34,7 +41,7 @@ const ManageMembershipPlans = () => {
         );
         setMembershipData(fetchedData.membershipPlan);
       } catch (err) {
-        // fetchUrl();
+        fetchUrl();
         if (axios.isAxiosError(err)) {
           const backendError = err.response?.data;
           console.log(backendError?.error);
@@ -76,7 +83,7 @@ const ManageMembershipPlans = () => {
       setUpdateMembership(false);
       setReloadFetch(!reloadFetch);
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -101,9 +108,10 @@ const ManageMembershipPlans = () => {
         },
       );
       console.log(res.data);
+      setConfirm(false);
       setReloadFetch(!reloadFetch);
     } catch (err) {
-      // fetchUrl();
+      fetchUrl();
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -191,7 +199,7 @@ const ManageMembershipPlans = () => {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       className="flex rounded-2xl bg-[#c22626]/80 border-[1px] border-[#424141]/50"
-                      onPress={() => deleteMembership(membershipItem.id)}
+                      onPress={() => setConfirm(membershipItem.id)}
                     >
                       <Text className="text-white text-[20px] py-1 px-2 font-jura-bold leading-none">
                         Delete
@@ -202,6 +210,14 @@ const ManageMembershipPlans = () => {
               ))}
           </ScrollView>
         </View>
+        {confirm && (
+          <Confirmation
+            setRemove={setConfirm}
+            title="?"
+            content="Are you sure you want to delete this?"
+            onConfirmed={() => deleteMembership(confirm)}
+          />
+        )}
         {updateMembership &&
           (updateMembership === "addNew" ? (
             <Add
