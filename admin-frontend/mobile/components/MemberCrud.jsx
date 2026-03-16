@@ -6,19 +6,13 @@ import {
 import key from "@/assets/icons/key.png";
 import phone from "@/assets/icons/phone.png";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
-import {
-  Image,
-  Keyboard,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import SelectLanguage from "./SelectLanguage";
 import CommonEdit from "./CommonEdit";
+import { useTranslation } from "react-i18next";
 
 const MemberCrud = ({
   type,
@@ -32,6 +26,7 @@ const MemberCrud = ({
   const [isInvisibleConfirm, setIsInvisibleConfirm] = useState(true);
   const [localImage, setLocalImage] = useState(null);
   const [language, setLanguage] = useState("English");
+  const { t } = useTranslation();
   const [personalData, setPersonalData] = useState({
     full_name: "",
     phone_number: "",
@@ -139,7 +134,7 @@ const MemberCrud = ({
             <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
               <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[80px] items-center">
                 <Text className="text-white text-[18px] font-jura-bold">
-                  Weight
+                  {t("components.Weight")}
                 </Text>
               </View>
               <View className="flex flex-row justify-center items-center">
@@ -161,7 +156,7 @@ const MemberCrud = ({
             <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
               <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl w-[80px] items-center">
                 <Text className="text-white text-[18px] font-jura-bold">
-                  Height
+                  {t("components.Height")}
                 </Text>
               </View>
               <View className="flex flex-row justify-center items-center">
@@ -183,7 +178,7 @@ const MemberCrud = ({
             <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
               <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[80px] items-center">
                 <Text className="text-white text-[18px] font-jura-bold">
-                  Age
+                  {t("components.Age")}
                 </Text>
               </View>
               <TextInput
@@ -200,7 +195,7 @@ const MemberCrud = ({
             <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center justify-between">
               <View className="bg-[#4CA24F] py-[2px]  rounded-xl  w-[160px] items-center">
                 <Text className="text-white text-[18px] font-jura-bold">
-                  Select language
+                  {t("components.Select Language")}
                 </Text>
               </View>
               <View className="bg-[#777676] p-1 px-2 rounded-md border-[1px] border-[#424141] relative h-9 w-[120px] items-center">
@@ -215,7 +210,7 @@ const MemberCrud = ({
                 }
               >
                 <Text className=" text-white text-[22px] font-jura-bold">
-                  Male
+                  {t("components.Male")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -228,7 +223,7 @@ const MemberCrud = ({
                 }
               >
                 <Text className="text-white text-[22px] font-jura-bold">
-                  Female
+                  {t("components.Female")}
                 </Text>
               </TouchableOpacity>
             </View>

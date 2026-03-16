@@ -3,12 +3,10 @@ import { useEffect } from "react";
 import { View, ImageBackground } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import warriors from "@/assets/images/logo.png";
-import { fetchUrl } from "@/utils/ApiClient";
 
 const App = () => {
   const router = useRouter();
   useEffect(() => {
-    fetchUrl();
     const prepare = async () => {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {

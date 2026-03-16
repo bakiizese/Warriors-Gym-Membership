@@ -2,23 +2,23 @@ import { useEffect, useState } from "react";
 import { Image, Text, View } from "react-native";
 import strike from "../assets/icons/strike.png";
 import noStrike from "../assets/icons/noStrike.png";
+import { addDays, subDays } from "date-fns";
 
 const AttendanceHead = ({ attendance, now }) => {
   let size = 0;
   const baseSize = 22;
-  const day = now.getDate();
   const [shownAttendances, setShownAttendances] = useState([
-    { date: day - 5, strike: false },
-    { date: day - 4, strike: false },
-    { date: day - 3, strike: false },
-    { date: day - 2, strike: false },
-    { date: day - 1, strike: false },
-    { date: day, strike: false },
-    { date: day + 1, strike: false },
-    { date: day + 2, strike: false },
-    { date: day + 3, strike: false },
-    { date: day + 4, strike: false },
-    { date: day + 5, strike: false },
+    { date: subDays(now, 5).getDate(), strike: false },
+    { date: subDays(now, 4).getDate(), strike: false },
+    { date: subDays(now, 3).getDate(), strike: false },
+    { date: subDays(now, 2).getDate(), strike: false },
+    { date: subDays(now, 1).getDate(), strike: false },
+    { date: now.getDate(), strike: false },
+    { date: addDays(now, 1).getDate(), strike: false },
+    { date: addDays(now, 2).getDate(), strike: false },
+    { date: addDays(now, 3).getDate(), strike: false },
+    { date: addDays(now, 4).getDate(), strike: false },
+    { date: addDays(now, 5).getDate(), strike: false },
   ]);
 
   const attendanceNumber = () => {
@@ -33,17 +33,17 @@ const AttendanceHead = ({ attendance, now }) => {
 
   useEffect(() => {
     setShownAttendances([
-      { date: day - 5, strike: false },
-      { date: day - 4, strike: false },
-      { date: day - 3, strike: false },
-      { date: day - 2, strike: false },
-      { date: day - 1, strike: false },
-      { date: day, strike: false },
-      { date: day + 1, strike: false },
-      { date: day + 2, strike: false },
-      { date: day + 3, strike: false },
-      { date: day + 4, strike: false },
-      { date: day + 5, strike: false },
+      { date: subDays(now, 5).getDate(), strike: false },
+      { date: subDays(now, 4).getDate(), strike: false },
+      { date: subDays(now, 3).getDate(), strike: false },
+      { date: subDays(now, 2).getDate(), strike: false },
+      { date: subDays(now, 1).getDate(), strike: false },
+      { date: now.getDate(), strike: false },
+      { date: addDays(now, 1).getDate(), strike: false },
+      { date: addDays(now, 2).getDate(), strike: false },
+      { date: addDays(now, 3).getDate(), strike: false },
+      { date: addDays(now, 4).getDate(), strike: false },
+      { date: addDays(now, 5).getDate(), strike: false },
     ]);
     attendanceNumber();
   }, [attendance, now]);

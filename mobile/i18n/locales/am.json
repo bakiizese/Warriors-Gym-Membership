@@ -45,7 +45,8 @@
     "Select a Membership Plan": "የአባልነት እቅድ ይምረጡ",
     "Pay": "ክፈል",
     "Workout Plans": "የእንቅስቃሴ እቅዶች",
-    "days": "ቀናት"
+    "days": "ቀናት",
+    "Programs and Competitions": "ፕሮግራሞች እና ውድድሮች"
   },
   "profile": {
     "Profile": "መገለጫ",
@@ -53,7 +54,8 @@
     "Attendance Log": "የመግቢያ መዝገብ",
     "Edit": "አስተካክል",
     "Male": "ወንድ",
-    "Female": "ሴት"
+    "Female": "ሴት",
+    "Logout": "ውጣ"
   },
   "membership": {
     "Month": "ወር",
@@ -108,9 +110,11 @@
     "Abs": "ኣብስ",
     "Calf": "ካልፍ",
     "Quad": "ኩዋድ",
-    "Glute & Hamstring": "የግሉት እና የሃምስትሪንግ"
+    "Glute & Hamstring": "የግሉት እና የሃምስትሪንግ",
+    "Programs": "ፕሮግራሞች"
   },
   "components": {
+    "Select Language": "ቋንቋ ይምረጡ",
     "This will replace your previous plan.": "ይህ የቀድሞ እቅድዎን ይቀይራል።",
     "Are you sure?": "እርግጠኛ ነዎት?",
     "Yes": "አዎ",
@@ -125,10 +129,12 @@
     "English": "እንግሊዝኛ",
     "Amharic": "አማርኛ",
     "Male": "ወንድ",
-    "Female": "ሴት"
+    "Female": "ሴት",
+    "Do you want to logout?": "መውጣት ትፈልጋለህ/ትፈልጊያለሽ?",
+    "Status": "ሁኔታ"
   },
   "landingPage": {
-    "Address: Tigray, Axum, Edaga Hamus": "Address: Tigray, Axum, Edaga Hamus",
+    "Address: Tigray, Axum, Edaga Hamus": "አድራሻ፡ ትግራይ፣ አክሱም፣ እዳጋ ሓሙስ",
     "Contact:": "Contact:"
   }
 }

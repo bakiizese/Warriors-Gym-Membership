@@ -5,7 +5,6 @@ import SearchAndFilter from "../Component/SearchAndFilter";
 import ApiClient from "../utils/ApiClient";
 
 const AttendanceLogs = () => {
-  const navigate = useNavigate();
   const [attendanceLog, setAttendanceLog] = useState([]);
   const [filteredAttendanceLog, setfilteredAttendanceLog] = useState([]);
   const filterSelections = ["Member Id", "Name", "Gender", "Date", "Check In"];

@@ -14,7 +14,6 @@ WorkoutPlan.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    //allownull must be false
     video_id: {
       type: DataTypes.UUID,
       allowNull: true,

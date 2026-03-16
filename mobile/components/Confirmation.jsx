@@ -6,7 +6,10 @@ const Confirmation = ({ setRemove, title, content, onConfirmed }) => {
   const { t } = useTranslation();
 
   return (
-    <View className="absolute inset-0 z-20 justify-center items-center px-10">
+    <View
+      className="absolute inset-0 z-20 justify-center items-center px-10"
+      onPress={() => setRemove(true)}
+    >
       <View className="bg-gray-800 w-full rounded-2xl justify-between border-2 gap-2 overflow-hidden border-[#0ba50b]">
         <View className="bg-black/20 py-2 items-center">
           <Text className="text-white leading-none text-[25px] font-jura-bold h-8">

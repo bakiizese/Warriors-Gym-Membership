@@ -7,7 +7,7 @@ const Thumbnail = ({ videoUrl }) => {
     if (!videoUrl) return;
     const createThumbnail = async () => {
       try {
-        const res = await fetch(`http://${ADDRESS}/${videoUrl}`);
+        const res = await fetch(`${ADDRESS}/${videoUrl}`);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
 

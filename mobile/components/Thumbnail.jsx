@@ -1,18 +1,28 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useState, useEffect } from "react";
 import { View, Image, Text } from "react-native";
+import { Asset } from "expo-asset";
 
 const Thumbnail = ({ videoUri }) => {
   const [thumbnail, setThumbnail] = useState(null);
   try {
     useEffect(() => {
       const genThumbnail = async () => {
-        if (!videoUri.includes("file://")) {
-          setThumbnail(null);
-          return;
-        }
         const newVideoUri = videoUri;
-        const { uri } = await VideoThumbnails.getThumbnailAsync(newVideoUri, {
+        let videoSource;
+
+        if (typeof newVideoUri === "number") {
+          const asset = Asset.fromModule(newVideoUri);
+          await asset.downloadAsync();
+          videoSource = asset.localUri || asset.uri;
+        } else {
+          if (!videoUri.includes("file://")) {
+            setThumbnail(null);
+            return;
+          }
+          videoSource = newVideoUri;
+        }
+        const { uri } = await VideoThumbnails.getThumbnailAsync(videoSource, {
           time: 500,
         });
         setThumbnail(uri);

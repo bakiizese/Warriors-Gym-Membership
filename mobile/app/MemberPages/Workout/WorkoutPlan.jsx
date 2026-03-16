@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import AppGradient from "../../../components/AppGradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ApiClient, { fetchUrl, getAddress } from "../../../utils/ApiClient";
+import ApiClient from "../../../utils/ApiClient";
 import axios from "axios";
 
 import chestWorkout from "../../../assets/images/workoutBgImages/Chest.jpeg";
@@ -28,12 +28,14 @@ import { useCallback, useEffect, useState } from "react";
 import * as FileSystem from "expo-file-system/legacy";
 import { useTranslation } from "react-i18next";
 
+import workoutLocalData from "../../../constants/localWorkoutData";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 const Workout = () => {
   const router = useRouter();
   const [workoutData, setWorkoutData] = useState();
-  const ADDRESS = getAddress();
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const { t } = useTranslation();
-  const [counterLoad, setCounterLoad] = useState(0);
   const [pressed, setPressed] = useState("");
 
   const workoutRoute = {
@@ -135,8 +137,7 @@ const Workout = () => {
 
   useEffect(() => {
     setPressed("");
-    fetchUrl();
-    fetchOffline();
+    setWorkoutData(workoutLocalData);
     fetchWorkout();
   }, []);
 
@@ -154,7 +155,7 @@ const Workout = () => {
       });
       console.log("in onlie");
       const { workoutPlan, length } = res.data;
-      fetchOffline(workoutPlan, length);
+      fetchOffline(workoutPlan);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
@@ -166,9 +167,8 @@ const Workout = () => {
         console.log("An unexpected error occurred", err);
       }
       const workout = await AsyncStorage.getItem("workoutData");
-      const size = await AsyncStorage.getItem("workoutDataSize");
       const pasredWorkout = JSON.parse(workout);
-      fetchOffline(pasredWorkout, Number(size));
+      fetchOffline(pasredWorkout);
     }
   };
 
@@ -182,7 +182,6 @@ const Workout = () => {
         // console.log("file exists -size -", checkFile.size);
         return checkFile.uri;
       }
-
       if (fileUri?.path.includes("file://")) {
         // console.log("edit name first");
         const fileName = fileUri.path.split("/").pop();
@@ -196,12 +195,13 @@ const Workout = () => {
         return uri;
       } else {
         try {
+          console.log("saving file", `${ADDRESS}/${fileUri?.path}`);
           const { uri } = await FileSystem.downloadAsync(
             `${ADDRESS}/${fileUri?.path}`,
             localpath,
           );
           // console.log("uri", uri);
-          // console.log("file saved");
+          console.log("file saved");
           return uri;
         } catch (err) {
           console.log("err", err);
@@ -213,120 +213,118 @@ const Workout = () => {
     }
   };
 
-  const fetchOffline = async (offlineData = null, size = null) => {
+  const fetchOffline = async (offlineData = null) => {
+    let count = 0;
     if (offlineData) {
-      const margin = 100 / size;
-      setCounterLoad(0);
-      let counter = 0;
       let promises = [];
       for (const key in offlineData) {
         const savedFile = offlineData[key].map(async (item) => {
+          if (typeof item.video.path === "number") {
+            return;
+          }
           const localUri = await saveFile(item.video);
+          count = count + 1;
+          console.log(count);
           if (localUri) item.video.path = localUri;
-          counter = counter + margin;
-          setCounterLoad(counter);
         });
         promises.push(...savedFile);
       }
       await Promise.all(promises);
-      await AsyncStorage.setItem("workoutData", JSON.stringify(offlineData));
-      await AsyncStorage.setItem("workoutDataSize", String(size));
-      const workout = await AsyncStorage.getItem("workoutData");
-      const pasredWorkout = JSON.parse(workout);
-      setWorkoutData(pasredWorkout);
-    } else {
-      console.log("in offlineee");
-      const workouts = await AsyncStorage.getItem("workoutData");
 
-      const pasredWorkouts = JSON.parse(workouts);
-      setWorkoutData(pasredWorkouts);
+      await AsyncStorage.setItem("workoutData", JSON.stringify(offlineData));
+      console.log("done");
+    }
+    console.log("in offlineee");
+    const workouts = await AsyncStorage.getItem("workoutData");
+    const parsedWorkouts = JSON.parse(workouts);
+    let workout = {};
+    if (parsedWorkouts) {
+      for (const key in workoutLocalData) {
+        if (parsedWorkouts[key]) {
+          workout[key] = parsedWorkouts[key];
+          workout[key].push(...workoutLocalData[key]);
+        } else {
+          workout[key] = workoutLocalData[key];
+        }
+      }
+      setWorkoutData(workout);
+    } else {
+      setWorkoutData(workoutLocalData);
     }
   };
 
   return (
     <AppGradient>
-      <View className="flex-1">
-        <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
-          <Pressable onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={33} color="black" />
-          </Pressable>
-          <Text className="text-white h-10 pl-2 leading-none text-[30px] font-jura-bold">
-            {t("workout.Workout Plans")}
-          </Text>
-        </View>
-        <View className="flex-1 mb-6 mt-2">
-          {counterLoad < 100 && (
-            <Text className="text-center leading-none">Loading...</Text>
-          )}
-          <View className="flex px-3">
-            <View className="h-5 w-full bg-gray-600 rounded-xl p-[1px] relative justify-center items-center">
-              <View
-                className={`h-full bg-[#00FF00]/60 rounded-xl`}
-                style={{ width: `${counterLoad}%` }}
-              ></View>
-              <Text className="text-center absolute">
-                {Math.floor(counterLoad)}
+      <SafeAreaView className="flex-1" edges={["bottom"]}>
+        <View className="flex-1">
+          <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
+            <Pressable onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={33} color="black" />
+            </Pressable>
+            <Text className="text-white h-10 pl-2 leading-none text-[30px] font-jura-bold">
+              {t("workout.Workout Plans")}
+            </Text>
+          </View>
+          <View className="flex-1 mb-6 mt-2">
+            <View className="flex-1">
+              <Text className="text-white px-5 text-[30px] font-jura-bold">
+                {t("workout.Upper Body")}
               </Text>
+              <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
+                {workoutRoute.upperBody.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    key={item.title}
+                    className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
+                    onPress={() => {
+                      (setPressed(item.title), router.push(item.link));
+                    }}
+                    disabled={pressed === item.title}
+                  >
+                    <ImageBackground
+                      source={item.bgImage}
+                      resizeMode="cover"
+                      className="h-full w-full justify-center items-center"
+                    >
+                      <Text className="text-white text-[35px] font-jura-bold">
+                        {t(`workout.${item.title}`)}
+                      </Text>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <View className="flex-1">
+              <Text className="text-white px-5 text-[30px] font-jura-bold">
+                {t("workout.Lower Body")}
+              </Text>
+              <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
+                {workoutRoute.lowerBody.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    key={item.title}
+                    className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
+                    onPress={() => {
+                      (setPressed(item.title), router.push(item.link));
+                    }}
+                    disabled={pressed === item.title}
+                  >
+                    <ImageBackground
+                      source={item.bgImage}
+                      resizeMode="cover"
+                      className="h-full w-full justify-center items-center"
+                    >
+                      <Text className="text-white text-[35px] font-jura-bold text-center">
+                        {t(`workout.${item.title}`)}
+                      </Text>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-white px-5 text-[30px] font-jura-bold">
-              {t("workout.Upper Body")}
-            </Text>
-            <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
-              {workoutRoute.upperBody.map((item) => (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  key={item.title}
-                  className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
-                  onPress={() => {
-                    (setPressed(item.title), router.push(item.link));
-                  }}
-                  disabled={counterLoad <= 100 || pressed === item.title}
-                >
-                  <ImageBackground
-                    source={item.bgImage}
-                    resizeMode="cover"
-                    className="h-full w-full justify-center items-center"
-                  >
-                    <Text className="text-white text-[35px] font-jura-bold">
-                      {t(`workout.${item.title}`)}
-                    </Text>
-                  </ImageBackground>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-          <View className="flex-1">
-            <Text className="text-white px-5 text-[30px] font-jura-bold">
-              {t("workout.Lower Body")}
-            </Text>
-            <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
-              {workoutRoute.lowerBody.map((item) => (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  key={item.title}
-                  className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
-                  onPress={() => {
-                    (setPressed(item.title), router.push(item.link));
-                  }}
-                  disabled={counterLoad <= 100 || pressed === item.title}
-                >
-                  <ImageBackground
-                    source={item.bgImage}
-                    resizeMode="cover"
-                    className="h-full w-full justify-center items-center"
-                  >
-                    <Text className="text-white text-[35px] font-jura-bold text-center">
-                      {t(`workout.${item.title}`)}
-                    </Text>
-                  </ImageBackground>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
         </View>
-      </View>
+      </SafeAreaView>
     </AppGradient>
   );
 };

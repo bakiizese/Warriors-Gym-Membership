@@ -6,7 +6,6 @@ import ApiClient from "../utils/ApiClient";
 import AddTransaction from "../Component/AddTransaction";
 
 const ManagePayments = () => {
-  const navigate = useNavigate();
   const [addPayment, setAddPayment] = useState(false);
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [filteredTransactionData, setFilteredTransactionData] = useState([]);

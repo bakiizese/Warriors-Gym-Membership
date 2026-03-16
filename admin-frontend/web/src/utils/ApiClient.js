@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const ADDRESS = import.meta.env.VITE_ADDRESS;
-const URL = `http://${ADDRESS}/`;
+const URL = `${ADDRESS}/`;
 
 const ApiClient = axios.create({
   baseURL: URL,

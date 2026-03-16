@@ -1,19 +1,35 @@
 import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
 
 const SelectLanguage = ({ primary, setPrimary }) => {
-  const [secondary, setSecondary] = useState("Tigrigna");
-  const [tertiary, setTertiary] = useState("Amharic");
+  const [secondary, setSecondary] = useState(
+    "Tigrigna" === primary
+      ? "Amharic"
+      : primary === "English"
+        ? "Tigrigna"
+        : "English",
+  );
+  const [tertiary, setTertiary] = useState(
+    "Amharic" === primary
+      ? "Tigrigna"
+      : primary === "English"
+        ? "Amharic"
+        : "English",
+  );
   const [langSelector, setLangSelector] = useState(false);
+  const { t } = useTranslation();
 
   return (
-    <View className="absolute justify-center items-center z-30">
+    <View className="absolute justify-center items-center z-30 w-full">
       <TouchableOpacity
         onPress={() => setLangSelector(!langSelector)}
-        className="text-xl text-center self-center "
+        activeOpacity={0}
+        className="text-xl text-center self-center"
       >
         <Text className="text-white text-[24px] font-jura leading-none">
-          {primary}
+          {t(`components.${primary}`)}
         </Text>
       </TouchableOpacity>
       {langSelector && (
@@ -22,22 +38,24 @@ const SelectLanguage = ({ primary, setPrimary }) => {
             onPress={() => {
               (setPrimary(secondary), setSecondary(primary));
               setLangSelector(false);
+              i18n.changeLanguage(secondary);
             }}
             className={`px-1 rounded-md ${TouchableOpacity}`}
           >
             <Text className="text-white text-[24px] font-jura leading-none">
-              {secondary}
+              {t(`components.${secondary}`)}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               (setPrimary(tertiary), setTertiary(primary));
               setLangSelector(false);
+              i18n.changeLanguage(tertiary);
             }}
             className={`px-1 rounded-md ${TouchableOpacity} `}
           >
             <Text className="text-white text-[24px] font-jura leading-none">
-              {tertiary}
+              {t(`components.${tertiary}`)}
             </Text>
           </TouchableOpacity>
         </View>

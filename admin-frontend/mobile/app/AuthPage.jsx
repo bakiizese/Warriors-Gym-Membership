@@ -4,8 +4,7 @@ import AppGradient from "@/components/AppGradient";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ApiClient, { fetchUrl } from "../utils/ApiClient";
-
+import ApiClient from "../utils/ApiClient";
 import {
   default as hide_key,
   default as unhide_key,
@@ -13,7 +12,6 @@ import {
 import key from "@/assets/icons/key.png";
 import phone from "@/assets/icons/phone.png";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
 import {
   ActivityIndicator,
   Image,
@@ -37,8 +35,6 @@ export default function AuthPage() {
   const [loadingStat, setLoadingStat] = useState(false);
 
   useEffect(() => {
-    fetchUrl();
-
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       () => setKeyboardVisible(true),
@@ -74,7 +70,7 @@ export default function AuthPage() {
     requestLogin();
   };
 
-  const requestLogin = async ({ phone_number, pwd } = {}) => {
+  const requestLogin = async () => {
     try {
       const res = await ApiClient.post("auth/sign-in/admin", {
         phone_number: phoneNumber,
@@ -83,13 +79,11 @@ export default function AuthPage() {
       const { userCheck, token } = res.data;
 
       await AsyncStorage.setItem("adminToken", token);
-
       route.replace("/AdminDashboard");
 
       setLoadingStat(false);
       setErrorMessage("");
     } catch (error) {
-      fetchUrl();
       if (axios.isAxiosError(error)) {
         const backendError = error.response?.data;
         console.log("Backend Error Message:", backendError?.error);
@@ -106,7 +100,7 @@ export default function AuthPage() {
 
   return (
     <AppGradient>
-      <SafeAreaView className="flex-1">
+      <View className="flex-1">
         <ImageBackground
           source={logo}
           className="h-[600px] w-[600px] mt-24 absolute opacity-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -182,7 +176,7 @@ export default function AuthPage() {
             )}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </AppGradient>
   );
 }

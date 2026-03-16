@@ -45,7 +45,8 @@
     "Select a Membership Plan": "Select a Membership Plan",
     "Pay": "Pay",
     "Workout Plans": "Workout Plans",
-    "days": "days"
+    "days": "days",
+    "Programs and Competitions": "Programs and Competitions"
   },
   "profile": {
     "Profile": "Profile",
@@ -53,7 +54,8 @@
     "Attendance Log": "Attendance Log",
     "Edit": "Edit",
     "Male": "Male",
-    "Female": "Female"
+    "Female": "Female",
+    "Logout": "Logout"
   },
   "membership": {
     "Month": "Month",
@@ -108,7 +110,8 @@
     "Abs": "Abs",
     "Calf": "Calf",
     "Quad": "Quad",
-    "Glute & Hamstring": "Glute & Hamstring"
+    "Glute & Hamstring": "Glute & Hamstring",
+    "Programs": "Programs"
   },
   "components": {
     "This will replace your previous plan.": "This will replace your previous plan.",
@@ -125,7 +128,9 @@
     "English": "English",
     "Amharic": "Amharic",
     "Male": "Male",
-    "Female": "Female"
+    "Female": "Female",
+    "Do you want to logout?": "Do you want to logout?",
+    "Status": "Status"
   },
   "landingPage": {
     "Address Tigray, Axum, Edaga Hamus": "Address: Tigray, Axum, Edaga Hamus",

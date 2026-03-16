@@ -11,6 +11,7 @@ import CommonEdit from "./CommonEdit";
 import ApiClient from "../utils/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 const AddTransaction = ({
   setRemove,
@@ -32,6 +33,7 @@ const AddTransaction = ({
     membership_id: "",
   });
   const [membershipData, setMembershipData] = useState([]);
+  const { t } = useTranslation();
 
   const checkData = () => {
     const transactionKeys = [
@@ -57,8 +59,8 @@ const AddTransaction = ({
   };
 
   useEffect(() => {
+    offlineData();
     setErrorMessage("");
-
     const fetchMembership = async () => {
       const token = await AsyncStorage.getItem("adminToken");
       try {
@@ -67,7 +69,12 @@ const AddTransaction = ({
         });
         const fetchedData = res.data;
         setMembershipData(fetchedData.membershipPlan);
+        await AsyncStorage.setItem(
+          "membershipPlan",
+          JSON.stringify(fetchedData.membershipPlan),
+        );
       } catch (err) {
+        offlineData();
         if (axios.isAxiosError(err)) {
           const backendError = err.response?.data;
           console.log(backendError?.error);
@@ -82,6 +89,13 @@ const AddTransaction = ({
     fetchMembership();
   }, []);
 
+  const offlineData = async () => {
+    const membershipPlan = await AsyncStorage.getItem("membershipPlan");
+    const parsedMembershipPlan = JSON.parse(membershipPlan);
+    if (parsedMembershipPlan) {
+      setMembershipData(parsedMembershipPlan);
+    }
+  };
   const fetchExistMembership = async () => {
     if (!transactionData.payer_id) {
       setErrorMessage("enter payer id first");
@@ -144,7 +158,7 @@ const AddTransaction = ({
           <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center justify-between gap-3">
             <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
               <Text className="text-white text-[18px] font-jura-bold">
-                Payment type
+                {t("components.Payment type")}
               </Text>
             </View>
             <TouchableOpacity
@@ -165,7 +179,7 @@ const AddTransaction = ({
           <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
             <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
               <Text className="text-white text-[18px] font-jura-bold">
-                Payer id
+                {t("components.Payer id")}
               </Text>
             </View>
             <TextInput
@@ -187,7 +201,7 @@ const AddTransaction = ({
               }
             >
               <Text className=" text-white text-[22px] font-jura-bold">
-                New
+                {t("components.New")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -203,19 +217,19 @@ const AddTransaction = ({
               }}
             >
               <Text className="text-white text-[22px] font-jura-bold">
-                Renew
+                {t("components.Renew")}
               </Text>
             </TouchableOpacity>
           </View>
           <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
             <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
               <Text className="text-white text-[18px] font-jura-bold">
-                Amount
+                {t("components.Amount")}
               </Text>
             </View>
             <View className="flex flex-row justify-center items-center">
               <Text className="text-white text-[18px] h-full font-jura-bold">
-                {transactionData.amount} Birr
+                {transactionData.amount} {t("components.Birr")}
               </Text>
             </View>
           </View>
@@ -269,7 +283,7 @@ const AddTransaction = ({
             </View>
           ) : (
             <Text className="text-red-800 text-center font-jura text-[20px] max-h-12">
-              *No Membership Found
+              *{t("components.No Membership Found")}
             </Text>
           )}
         </View>

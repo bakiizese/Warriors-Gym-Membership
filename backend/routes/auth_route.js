@@ -27,7 +27,6 @@ const memberData = [
 ];
 
 export async function signUp(req, res) {
-
   const userType = req.params.userType;
   const userData = req.body;
   //check if all required data exist
@@ -102,10 +101,7 @@ authRouter.post("/sign-in/:userType", async (req, res) => {
   userCheck.save();
   return res.status(200).json({ userCheck, token: token });
 });
-authRouter.post("/sign-off/:userType", async (req, res) => {
-  const userType = req.params.userType;
-  return res.status(200).json({ user: "sign-off successfull" });
-});
+
 authRouter.get("/sign-up/:phoneNumber", async (req, res) => {
   const phoneNumber = req.params.phoneNumber;
   try {

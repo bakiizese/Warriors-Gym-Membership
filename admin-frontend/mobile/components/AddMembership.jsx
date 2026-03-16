@@ -1,19 +1,9 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Keyboard,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import dumbbell from "../assets/icons/dumbbell.png";
-import remove from "../assets/icons/remove.png";
 import CommonEdit from "./CommonEdit";
+import { useTranslation } from "react-i18next";
 
 const Add = ({
   setRemove,
@@ -24,7 +14,6 @@ const Add = ({
   errorMessage,
   prevData = null,
 }) => {
-  const router = useRouter();
   const [membershipData, setMembershipData] = useState({
     membership_name: prevData?.membership_name || "",
     plan_type: prevData?.plan_type || "Daily",
@@ -43,6 +32,7 @@ const Add = ({
     "status",
     "duration_days",
   ];
+  const { t } = useTranslation();
 
   const checkData = () => {
     for (const key of membershipKeys) {
@@ -162,7 +152,7 @@ const Add = ({
               disabled={true}
             >
               <Text className="text-[#3B5793] leading-none h-[40px] text-[35px] font-jura-bold">
-                Pay
+                {t("components.Pay")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -170,7 +160,7 @@ const Add = ({
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-[90%] flex flex-row justify-between items-center">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[100px] items-center">
             <Text className="text-white text-[18px] font-jura-bold">
-              Status
+              {t("components.Status")}
             </Text>
           </View>
           <TouchableOpacity
@@ -183,14 +173,14 @@ const Add = ({
             className={`flex flex-row justify-center items-center ${membershipData.status === "Active" ? "bg-[#4CA24F]" : "bg-[#777676]"} px-5 rounded-2xl`}
           >
             <Text className="text-white text-[23px] font-jura-bold ">
-              {membershipData.status}
+              {t(`components.${membershipData.status}`)}
             </Text>
           </TouchableOpacity>
         </View>
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-[90%] flex flex-row justify-between items-center">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[120px] items-center">
             <Text className="text-white text-[18px] font-jura-bold">
-              Plan type
+              {t("components.Plan Type")}
             </Text>
           </View>
           <TouchableOpacity
@@ -203,7 +193,7 @@ const Add = ({
             className="flex flex-row justify-center items-center bg-[#777676] px-5 rounded-2xl"
           >
             <Text className="text-white text-[23px] font-jura-bold ">
-              {membershipData.plan_type}
+              {t(`components.${membershipData.plan_type}`)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -211,11 +201,11 @@ const Add = ({
           <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-[90%] flex flex-row justify-between items-center">
             <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl  w-[150px] items-center">
               <Text className="text-white text-[18px] font-jura-bold">
-                Ticket amount
+                {t("components.Ticket amount")}
               </Text>
             </View>
             <TextInput
-              value={membershipData.ticket_amount}
+              value={String(membershipData.ticket_amount)}
               onChangeText={(text) =>
                 setMembershipData((prev) => ({
                   ...prev,

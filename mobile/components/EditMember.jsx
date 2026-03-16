@@ -22,7 +22,8 @@ import {
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import { useTranslation } from "react-i18next";
-import { fetchUrl, getAddress } from "../utils/ApiClient";
+import SelectLanguage from "./AuthPage/SelectLanguage";
+import i18n from "../i18n";
 
 const EditMember = ({
   editData,
@@ -37,6 +38,7 @@ const EditMember = ({
   const [isInvisibleConfirm, setIsInvisibleConfirm] = useState(true);
   const [localImage, setLocalImage] = useState(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [language, setLanguage] = useState(editData.language || "English");
   const [personalData, setPersonalData] = useState({
     full_name: editData.full_name || "",
     phone_number: editData.phone_number || "",
@@ -47,11 +49,16 @@ const EditMember = ({
     password: "",
     confirmPassword: "",
     image: editData.image || "",
-    language: editData.language || "English",
+    language: language,
     gender: editData.gender || "Male",
   });
-  const ADDRESS = getAddress();
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setPersonalData((prev) => ({ ...prev, language: language }));
+    i18n.changeLanguage(language);
+  }, [language]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -92,7 +99,7 @@ const EditMember = ({
     for (const key in personalData) {
       if (
         personalData[key] === "" &&
-        !["password", "confirmPassword", "oldPassword"].includes(key)
+        !["password", "confirmPassword", "oldPassword", "image"].includes(key)
       ) {
         console.log(key, "is missing");
         setErrorMessage(`${key} is missing`);
@@ -170,7 +177,7 @@ const EditMember = ({
               <TouchableOpacity
                 activeOpacity={0.9}
                 className="flex relative"
-                onPress={() => pickImage()}
+                onPress={pickImage}
               >
                 <Image
                   source={
@@ -180,7 +187,7 @@ const EditMember = ({
                         ? {
                             uri: personalData.image.includes("file://")
                               ? personalData.image
-                              : `http://${ADDRESS}/${personalData.image}`,
+                              : `${ADDRESS}/${personalData.image}`,
                           }
                         : profile
                   }
@@ -193,6 +200,17 @@ const EditMember = ({
                   className="h-6 w-6 m-2 p-2 absolute right-1  top-1"
                 />
               </TouchableOpacity>
+              <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center justify-between">
+                <View className="bg-[#4CA24F] py-[2px]  rounded-xl  w-[160px] items-center">
+                  <Text className="text-white text-[18px] font-jura-bold">
+                    {t("profile.Select Language")}
+                  </Text>
+                </View>
+                <View className="bg-[#777676] p-1 px-2 rounded-md border-[1px] border-[#424141] relative h-9 w-[120px] items-center">
+                  <SelectLanguage primary={language} setPrimary={setLanguage} />
+                </View>
+              </View>
+
               <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[48px] w-full flex flex-row items-center gap-3">
                 <Image
                   source={profile_r}

@@ -15,6 +15,9 @@ import path from "path";
 import TransactionHistory from "../models/TransactionHistory.js";
 import { membershipCalculate } from "../utils/logic.js";
 import { addDays } from "date-fns";
+import Program from "../models/Program.js";
+import { gen_jwt_token } from "../utils/jwt.js";
+import { verify_password, hash_password } from "../utils/password.js";
 
 const adminRouter = express.Router();
 
@@ -41,7 +44,39 @@ adminRouter.get("/me", admin_auth, async (req, res) => {
   }
 });
 
-adminRouter.put("/picture", uploadFields, admin_auth, async (req, res) => {
+// adminRouter.put("/picture", uploadFields, admin_auth, async (req, res) => {
+//   try {
+//     let filePath = "";
+//     if (req.files && req.files.file) {
+//       if (req.files.file[0]?.path) {
+//         filePath = req.files.file[0]?.path;
+//       }
+//     }
+//     const adminId = req.adminId;
+//     const admin = await Admin.findOne({ where: { id: adminId } });
+//     if (admin.image && filePath) {
+//       fs.unlink(admin["image"], (err) => {
+//         if (err) {
+//           console.log("unable to remove image");
+//         } else {
+//           console.log("image removed successfully");
+//           admin["image"] = null;
+//         }
+//       });
+//     }
+//     if (typeof filePath === "string" && filePath) {
+//       admin["image"] = filePath;
+//     }
+//     admin.save();
+//     return res.status(200).json({ admin: "successfully updated" });
+//   } catch (err) {
+//     console.log(err);
+//     return res.status(500).json({ error: err });
+//   }
+// });
+
+adminRouter.put("/profile", uploadFields, admin_auth, async (req, res) => {
+  console.log("update");
   try {
     let filePath = "";
     if (req.files && req.files.file) {
@@ -49,23 +84,75 @@ adminRouter.put("/picture", uploadFields, admin_auth, async (req, res) => {
         filePath = req.files.file[0]?.path;
       }
     }
+
     const adminId = req.adminId;
-    const admin = await Admin.findOne({ where: { id: adminId } });
-    if (admin.image && filePath) {
-      fs.unlink(admin["image"], (err) => {
+    const updateData = JSON.parse(req.body.metadata);
+    const user = await Admin.findOne({ where: { id: adminId } });
+    for (const key in updateData) {
+      if (
+        ![
+          "id",
+          "createdAt",
+          "updatedAt",
+          "oldPassword",
+          "confirmPassword",
+          "password",
+          "phone_number",
+          "image",
+          "activity_status",
+        ].includes(key)
+      ) {
+        if (user[key]) {
+          user[key] = updateData[key];
+        }
+      }
+    }
+    if (user.image && filePath) {
+      fs.unlink(user["image"], (err) => {
         if (err) {
           console.log("unable to remove image");
         } else {
           console.log("image removed successfully");
-          admin["image"] = null;
+          user["image"] = null;
         }
       });
     }
+
     if (typeof filePath === "string" && filePath) {
-      admin["image"] = filePath;
+      user["image"] = filePath;
     }
-    admin.save();
-    return res.status(200).json({ admin: "successfully updated" });
+    if (updateData["oldPassword"] && updateData["oldPassword"] !== "") {
+      const checkPassword = await verify_password(
+        updateData["oldPassword"],
+        user.password,
+      );
+      if (!checkPassword) {
+        return res.status(400).json({ error: "incorrect oldPassword" });
+      }
+      const hash = await hash_password(updateData["password"]);
+      user.password = hash;
+    }
+    if (
+      updateData["phone_number"] &&
+      updateData["phone_number"] !== user.phone_number
+    ) {
+      const userCheck = await Admin.findOne({
+        where: { phone_number: updateData["phone_number"] },
+      });
+      if (userCheck) {
+        return res.status(400).json({ error: "phone number exists" });
+      }
+      const newToken = gen_jwt_token({
+        id: user.id,
+        phone_number: updateData["phone_number"],
+      });
+
+      user.phone_number = updateData["phone_number"];
+      user.save();
+      return res.status(200).json({ token: newToken, user: user });
+    }
+    user.save();
+    return res.status(200).json({ user: "successfully updated" });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
@@ -246,7 +333,7 @@ adminRouter.delete(
 adminRouter.get("/attendanceLog", admin_auth, async (req, res) => {
   try {
     const attendanceLog = await AttendanceLog.findAll({
-      limit: 30,
+      limit: 100,
       order: [["createdAt", "DESC"]],
       include: { model: Member, as: "attendanceMember" },
     });
@@ -555,7 +642,6 @@ adminRouter.get("/transactions", admin_auth, async (req, res) => {
   try {
     const transactions = await TransactionHistory.findAll({
       include: [{ model: Member, as: "payer" }],
-      limit: 30,
       order: [["paid_at", "DESC"]],
     });
     return res.status(200).json({ transactions: transactions });
@@ -698,6 +784,48 @@ adminRouter.get("/membership/:memberId", admin_auth, async (req, res) => {
     return res.status(200).json({ membership: membership });
   } catch (err) {
     console.log(err);
+    return res.status(500).json({ error: err });
+  }
+});
+
+//programs
+adminRouter.get("/programs", admin_auth, async (req, res) => {
+  try {
+    const programs = await Program.findAll({
+      limit: 50,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({ programs: programs });
+  } catch (err) {
+    return res.status(500).json({ error: err });
+  }
+});
+
+adminRouter.post("/programs", admin_auth, async (req, res) => {
+  try {
+    const programData = req.body;
+
+    if (!programData["content"]) {
+      return res.status(400).json({ error: "content missing" });
+    }
+    await Program.create({ ...programData });
+
+    return res.status(200).json({ programs: "program successfuly created" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
+});
+
+adminRouter.delete("/programs/:id", admin_auth, async (req, res) => {
+  try {
+    const programId = req.params.id;
+
+    await Program.destroy({ where: { id: programId } });
+
+    return res.status(200).json({ programs: "deleted successfuly" });
+  } catch (err) {
     return res.status(500).json({ error: err });
   }
 });

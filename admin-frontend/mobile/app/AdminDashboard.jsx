@@ -3,7 +3,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import axios from "axios";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -19,15 +18,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
 import AppGradient from "../components/AppGradient";
-import SelectLanguage from "../components/SelectLanguage";
-import ApiClient, { fetchUrl, getAddress } from "../utils/ApiClient";
-import NFC from "../utils/NFC";
+import { Linking } from "react-native";
+import ApiClient, { ApiClientFile } from "../utils/ApiClient";
 import * as FileSystem from "expo-file-system/legacy";
+import { useTranslation } from "react-i18next";
+import workoutM from "../assets/icons/workoutM.png";
+import programsM from "../assets/icons/programsM.png";
+import membershipM from "../assets/icons/membershipM.png";
+import transactionM from "../assets/icons/transactionM.png";
+import attendanceM from "../assets/icons/attendanceM.png";
+import memberM from "../assets/icons/memberM.png";
+import UpdateProfile from "../components/UpdateProfile";
+import remove from "../assets/icons/delete.png";
+import i18n from "i18next";
+import Confirmation from "../components/Confirmation";
 
 const AdminDashboard = () => {
   const router = useRouter();
   const [adminData, setAdminData] = useState();
-  const [language, setLanguage] = useState("English");
   const [totalActiveMembers, setTotalActiveMembers] = useState(0);
   const [paymentDueMembers, setPaymentDueMembers] = useState(0);
   const [todayAttendance, setTodayAttendance] = useState(0);
@@ -38,8 +46,16 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [loadings, setLoadings] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const ADDRESS = getAddress();
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const [pressedPage, setPressedPage] = useState("");
+  const { t } = useTranslation();
+  const [memberLocalNumber, setMemberLocalNumber] = useState(0);
+  const [attendancLocalNumber, setAttendancLocalNumber] = useState(0);
+  const [localTransactionNumber, setLocalTransactionNumber] = useState(0);
+  const [editProfile, setEditProfile] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [membersData, setMembersData] = useState([]);
+  const [confirm, setConfirm] = useState(false);
 
   const loadPage = async () => {
     await offlineData();
@@ -64,34 +80,101 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     setPressedPage("");
-    fetchUrl();
     loadPage();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       setPressedPage("");
+      offlineData();
     }, []),
   );
+
+  const saveProfile = async (profileData) => {
+    setLoadings(true);
+    const token = await AsyncStorage.getItem("adminToken");
+    const formData = new FormData();
+    formData.append("file", profileData.image ? profileData.image : {});
+    formData.append("metadata", JSON.stringify(profileData));
+    try {
+      const res = await ApiClientFile.put(`/admin/profile`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 10000,
+      });
+      console.log("res", res.data);
+      if (res.data?.token) {
+        await AsyncStorage.setItem("adminToken", res.data?.token);
+      }
+      setLoadings(false);
+      onlineData();
+      setEditProfile(false);
+    } catch (err) {
+      setLoadings(false);
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log("backend error", backendError?.error);
+        console.log("backend status", err.response?.status);
+        setErrorMessage(backendError?.error);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
 
   const offlineData = async () => {
     console.log("in offline");
     const adminData = await AsyncStorage.getItem("adminData");
     const parseAdminData = JSON.parse(adminData);
-
-    setAdminData(parseAdminData);
+    if (parseAdminData) {
+      setAdminData(parseAdminData);
+    }
 
     const activeMembersData = await AsyncStorage.getItem("activeMembers");
     const parseAMsData = JSON.parse(activeMembersData);
-    setTotalActiveMembers(parseAMsData);
+    if (parseAMsData) {
+      setTotalActiveMembers(parseAMsData);
+    }
 
     const paymentDueMembersData =
       await AsyncStorage.getItem("paymentDueMembers");
     const parsePDMsData = JSON.parse(paymentDueMembersData);
-    setPaymentDueMembers(parsePDMsData);
+    if (parsePDMsData) {
+      setPaymentDueMembers(parsePDMsData);
+    }
 
     const attendanceCount = await AsyncStorage.getItem("attendanceCount");
-    setTodayAttendance(attendanceCount);
+    if (attendanceCount) {
+      setTodayAttendance(attendanceCount);
+    }
+
+    const MemberLocalAdd = await AsyncStorage.getItem("MemberLocalAdd");
+    const parsedMemberLocalAdd = JSON.parse(MemberLocalAdd);
+    if (parsedMemberLocalAdd) {
+      setMemberLocalNumber(parsedMemberLocalAdd.length);
+    }
+
+    const members = await AsyncStorage.getItem("members");
+    if (members) {
+      const parseMembers = JSON.parse(members);
+      setMembersData(parseMembers);
+    }
+
+    const attendnacLocal = await AsyncStorage.getItem("localAttendance");
+    if (attendnacLocal) {
+      const attendnacLocalParse = JSON.parse(attendnacLocal);
+      setAttendancLocalNumber(attendnacLocalParse.length);
+    }
+
+    const localTransaction = await AsyncStorage.getItem("localTransaction");
+    if (localTransaction) {
+      const parsedLocalTransaction = JSON.parse(localTransaction);
+      setLocalTransactionNumber(parsedLocalTransaction.length);
+    }
   };
 
   const saveFile = async (user) => {
@@ -111,7 +194,6 @@ const AdminDashboard = () => {
         `${ADDRESS}/${fileUri}`,
         localpath,
       );
-      console.log("uri", uri);
       if (uri) {
         user.image = uri;
         await AsyncStorage.setItem("userData", JSON.stringify(user));
@@ -124,7 +206,6 @@ const AdminDashboard = () => {
   };
 
   const onlineData = () => {
-    fetchUrl();
     const fetchAdminDashboard = async () => {
       try {
         const token = await AsyncStorage.getItem("adminToken");
@@ -133,15 +214,15 @@ const AdminDashboard = () => {
         });
         await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
         if (res?.data?.user?.image) {
-          setLoadings(true);
-          await saveFile(res?.data?.user);
-          setLoadings(false);
+          saveFile(res?.data?.user);
         }
         setAdminData(res.data.user);
+        i18n.changeLanguage(res.data.user.language);
         fetchMembersStatus();
         fetchAttendanceLog();
+        fetchMembers();
       } catch (err) {
-        console.log("ee", err);
+        console.log(err);
         if (axios.isAxiosError(err)) {
           if (!err.response) {
             console.log("backend not responding");
@@ -175,7 +256,6 @@ const AdminDashboard = () => {
       const res = await ApiClient.get("admin/members_status", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // console.log("member status", res.data.members_status);
       const status = res.data.members_status;
       await AsyncStorage.setItem("activeMembers", String(status.activeMembers));
       await AsyncStorage.setItem(
@@ -221,13 +301,177 @@ const AdminDashboard = () => {
     }
   };
 
-  const scanNFC = async () => {
-    console.log("in scanning");
-    decoded = await NFC();
-    if (decoded) {
-      console.log(decoded);
-      attendance(decoded);
+  const saveTransaction = async (saveData) => {
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.post("/admin/transaction", saveData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log(res.data.transaction);
+      setLoading(false);
+      return 1;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        setErrorMessage(backendError?.error);
+        console.log(err.response?.status);
+        setLoading(false);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      setLoading(false);
+      return 0;
     }
+  };
+
+  const fetchTransactions = async () => {
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("/admin/transactions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await AsyncStorage.setItem(
+        "transactions",
+        JSON.stringify(res.data.transactions),
+      );
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
+
+  const fetchAttendance = async () => {
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("/admin/attendanceLog", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await AsyncStorage.setItem(
+        "attendances",
+        JSON.stringify(res.data.attendanceLog),
+      );
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
+
+  const saveMember = async (personalData) => {
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.post("admin/addMember", personalData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return 1;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      return 0;
+    }
+  };
+
+  const syncMember = async () => {
+    const MemberLocalAdd = await AsyncStorage.getItem("MemberLocalAdd");
+    const parsedMemberLocalAdd = JSON.parse(MemberLocalAdd);
+    if (parsedMemberLocalAdd) {
+      setMemberLocalNumber(parsedMemberLocalAdd.length);
+
+      const remainingParsedMember = [];
+
+      for (const key in parsedMemberLocalAdd) {
+        const save = await saveMember(parsedMemberLocalAdd[key]);
+        if (!save) {
+          remainingParsedMember.push(parsedMemberLocalAdd[key]);
+          setMemberLocalNumber(remainingParsedMember.length);
+        }
+      }
+      await AsyncStorage.setItem(
+        "MemberLocalAdd",
+        JSON.stringify(remainingParsedMember),
+      );
+      setMemberLocalNumber(remainingParsedMember.length);
+    }
+  };
+
+  const syncAttendance = async () => {
+    const localAttendance = await AsyncStorage.getItem("localAttendance");
+    const parsedlocalAttendance = JSON.parse(localAttendance);
+    if (parsedlocalAttendance) {
+      setAttendancLocalNumber(parsedlocalAttendance.length);
+
+      const remainingParsedAttendance = [];
+
+      for (const key in parsedlocalAttendance) {
+        const save = await attendance(
+          parsedlocalAttendance[key].attendanceMember.id,
+        );
+        if (!save) {
+          remainingParsedAttendance.push(parsedlocalAttendance[key]);
+          setAttendancLocalNumber(remainingParsedAttendance.length);
+        }
+      }
+      await AsyncStorage.setItem(
+        "localAttendance",
+        JSON.stringify(remainingParsedAttendance),
+      );
+      setAttendancLocalNumber(remainingParsedAttendance.length);
+    }
+  };
+
+  const syncPayment = async () => {
+    const localTransaction = await AsyncStorage.getItem("localTransaction");
+    const parsedlocalTransaction = JSON.parse(localTransaction);
+    if (parsedlocalTransaction) {
+      setLocalTransactionNumber(parsedlocalTransaction.length);
+
+      const remainingParsedTransaction = [];
+
+      for (const key in parsedlocalTransaction) {
+        const save = await saveTransaction(parsedlocalTransaction[key]);
+        if (!save) {
+          remainingParsedTransaction.push(parsedlocalTransaction[key]);
+          setLocalTransactionNumber(remainingParsedTransaction.length);
+        }
+      }
+      await AsyncStorage.setItem(
+        "localTransaction",
+        JSON.stringify(remainingParsedTransaction),
+      );
+      setLocalTransactionNumber(remainingParsedTransaction.length);
+    }
+  };
+
+  const syncData = async () => {
+    await syncMember();
+    await syncPayment();
+    await syncAttendance();
+    fetchMembers();
+    fetchTransactions();
+    fetchAttendance();
   };
 
   const scanQR = () => {
@@ -251,16 +495,44 @@ const AdminDashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      // console.log("attendance", res.data.attendance);
-      console.log("postat", res.data.attendance[1].full_name);
+      console.log("attendance", res.data);
       setScanned(res.data.attendance[1].full_name);
       fetchAttendanceLog();
+      return 1;
     } catch (err) {
+      setLoading(false);
       if (err.response?.status === 400) {
         setScanned("Already Attended");
-      } else {
+        return 400;
+      } else if (err.response?.status === 404) {
         setScanned("Not Found");
+        return 404;
       }
+      if (axios.isAxiosError(err)) {
+        saveLocalAttendance(data);
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+        return 0;
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      return 0;
+    }
+  };
+
+  const fetchMembers = async () => {
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("admin/members", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await AsyncStorage.setItem("members", JSON.stringify(res.data.members));
+      setMembersData(res.data.members);
+    } catch (err) {
+      console.log(err);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -271,71 +543,72 @@ const AdminDashboard = () => {
         console.log("An unexpected error occurred", err);
       }
     }
-    setLoading(false);
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  const saveLocalAttendance = async (attendId) => {
+    const exists = membersData.find(
+      (member) => member.id === attendId && member.activity_status === "Active",
+    );
 
-    if (!result.canceled) {
-      const file = result.assets[0];
-      const image = {
-        uri: file.uri || "http//",
-        name: file.fileName || "fileaName",
-        type: file.mimeType || "image/jpeg",
-      };
-
-      const token = await AsyncStorage.getItem("adminToken");
-      const formData = new FormData();
-
-      formData.append("file", image);
-
-      try {
-        const res = await axios.put(
-          `http://${ADDRESS}/admin/picture`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-        console.log(res.data);
-        onlineData();
-      } catch (err) {
-        console.log(err);
-        if (axios.isAxiosError(err)) {
-          const backendError = err.response?.data;
-          console.log("backend error", backendError?.error);
-          console.log("backend status", err.response?.status);
-        } else if (err instanceof Error) {
-          console.log("Generic Error:", err.message);
-        } else {
-          console.log("An unexpected error occurred", err);
-        }
-      }
+    if (!exists) {
+      setScanned("Not found");
+      return;
     }
+
+    const date = new Date();
+    const localAttend = await AsyncStorage.getItem("localAttendance");
+    if (localAttend) {
+      const parsedLocalAttend = JSON.parse(localAttend);
+      const checkDate = parsedLocalAttend.find(
+        (attend) =>
+          attend.attendanceMember.id === attendId &&
+          new Date(attend.date).getDate() === date.getDate(),
+      );
+      if (checkDate) {
+        setScanned("Already Attended");
+        return;
+      }
+      parsedLocalAttend.push({
+        date: date,
+        check_in: date,
+        isLocal: true,
+        attendanceMember: { ...exists },
+      });
+      await AsyncStorage.setItem(
+        "localAttendance",
+        JSON.stringify(parsedLocalAttend),
+      );
+    } else {
+      await AsyncStorage.setItem(
+        "localAttendance",
+        JSON.stringify([
+          {
+            isLocal: true,
+            check_in: date,
+            date: date,
+            attendanceMember: { ...exists },
+          },
+        ]),
+      );
+    }
+    const memberName = exists.full_name;
+    setScanned(memberName);
+
+    const count = Number(todayAttendance) + 1;
+    await AsyncStorage.setItem("attendanceCount", String(count));
+    offlineData();
   };
 
+  const emptyLocalData = async () => {
+    await AsyncStorage.setItem("MemberLocalAdd", JSON.stringify([]));
+    await AsyncStorage.setItem("localAttendance", JSON.stringify([]));
+    await AsyncStorage.setItem("localTransaction", JSON.stringify([]));
+    offlineData();
+    setConfirm(false);
+  };
   return (
     <AppGradient>
       <SafeAreaView className="flex-1 p-5 relative">
-        {loadings && (
-          <View className="flex-1 bg-black/10 absolute inset-0 z-20">
-            <ActivityIndicator
-              size="large"
-              color="#FFFFFF"
-              className="flex-1"
-              style={{ transform: [{ scale: 2 }] }}
-            />
-          </View>
-        )}
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -352,13 +625,13 @@ const AdminDashboard = () => {
                   {adminData?.phone_number}
                 </Text>
                 <Text className="text-white text-[22px] font-jura leading-none  tracking-[2px]">
-                  {adminData?.admin_level}
+                  {t(`dashboard.${adminData?.admin_level}`)}
                 </Text>
               </View>
               <TouchableOpacity
                 className="flex"
                 activeOpacity={0.8}
-                onPress={() => pickImage()}
+                onPress={() => setEditProfile(true)}
               >
                 <Image
                   source={
@@ -375,12 +648,47 @@ const AdminDashboard = () => {
                 />
               </TouchableOpacity>
             </View>
-            <View className="flex flex-row justify-between mx-1 my-[9px]">
-              <Text className="text-white text-[22px] font-jura leading-none">
-                Select Language
+            <View className="flex flex-col my-[4px]">
+              <Text className="leading-none text-center font-jura-bold h-5">
+                Developer Info
               </Text>
-              <View className="bg-[#777676] p-1 px-2 rounded-md border-[1px] border-[#424141] relative h-9 w-[120px] items-center">
-                <SelectLanguage primary={language} setPrimary={setLanguage} />
+              <View className="flex flex-row justify-between mx-1">
+                <Text
+                  style={{ color: "blue" }}
+                  className="decoration: underline leading-none"
+                  onPress={() =>
+                    Linking.openURL("mailto:bereketzeselassie@gmail.com")
+                  }
+                >
+                  bereketzeselassie@gmail.com
+                </Text>
+                <Text
+                  style={{ color: "blue" }}
+                  className="decoration: underline leading-none"
+                  onPress={() =>
+                    Linking.openURL(
+                      "https://www.linkedin.com/in/bereket-zeselassie-embaye",
+                    )
+                  }
+                >
+                  LinkedIn
+                </Text>
+                <Text
+                  style={{ color: "blue" }}
+                  className="decoration: underline leading-none"
+                  onPress={() => Linking.openURL("https://wa.me/251941353944")}
+                >
+                  WhatsApp
+                </Text>
+                <Text
+                  style={{ color: "blue" }}
+                  className="decoration: underline leading-none"
+                  onPress={() =>
+                    Linking.openURL("https://t.me/bereket_zeselassie")
+                  }
+                >
+                  Telegram
+                </Text>
               </View>
             </View>
             <View className="flex flex-row justify-evenly gap-3 mx-2 border-b-[4px] pb-3 border-[#7E7876]">
@@ -391,7 +699,7 @@ const AdminDashboard = () => {
                   </Text>
                 </View>
                 <Text className="text-white text-[15px] mx-1 font-jura-bold leading-none text-center">
-                  Total Active Members
+                  {t(`dashboard.Total Active Members`)}
                 </Text>
               </View>
               <View className="flex-1">
@@ -401,7 +709,7 @@ const AdminDashboard = () => {
                   </Text>
                 </View>
                 <Text className="text-white pt-[9px] text-[15px] mx-1 font-jura-bold leading-none text-center">
-                  Today Visits
+                  {t(`dashboard.Today Visits`)}
                 </Text>
               </View>
               <View className="flex-1">
@@ -411,7 +719,7 @@ const AdminDashboard = () => {
                   </Text>
                 </View>
                 <Text className="text-white text-[15px] mx-1 font-jura-bold leading-none text-center">
-                  Payment Due Soon
+                  {t(`dashboard.Payment Due Soon`)}
                 </Text>
               </View>
             </View>
@@ -424,8 +732,8 @@ const AdminDashboard = () => {
                   {loading ? (
                     <ActivityIndicator size="large" color="#FFFFFF" />
                   ) : (
-                    <View className="flex flex-row justify-center gap-1 items-center my-1">
-                      <Text className="text-white h-6 text-[24px] font-jura-bold text-center leading-none">
+                    <View className="flex flex-row justify-center gap-1 items-center">
+                      <Text className="text-white bg-gray-700 h-8 text-[24px] font-jura-bold text-center leading-none">
                         {scanned}
                       </Text>
                       {!["Not Found", "Already Attended", ""].includes(
@@ -454,35 +762,43 @@ const AdminDashboard = () => {
                   </View>
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    className="bg-[#0e970e] self-center px-2 py-1  mt-2 rounded-2xl"
+                    className="bg-[#0e970e] self-center px-2 py-1 mt-2 rounded-2xl"
                     onPress={() => {
                       (setScanned(""), setScannedData(""));
                     }}
                   >
                     <Text className="text-white font-jura-bold text-center text-2xl">
-                      Scan Again
+                      {t(`dashboard.Scan Again`)}
                     </Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
             <View className="flex flex-row h-14 w-full pt-3 px-2 items-center justify-between">
-              <TouchableOpacity
-                activeOpacity={0.8}
-                className="bg-[#00FF00]/50 px-3 rounded-2xl justify-center items-center h-10"
-                onPress={scanNFC}
-              >
-                <Text className="text-white text-[24px] font-jura-bold text-center leading-none">
-                  Scan Tags
-                </Text>
-              </TouchableOpacity>
+              <View className="flex-row items-center gap-2">
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="bg-[#00FF00]/50 px-3 rounded-2xl justify-center items-center h-10"
+                  onPress={syncData}
+                >
+                  <Text className="text-white text-[24px] font-jura-bold text-center leading-none">
+                    Sync -{" "}
+                    {Number(memberLocalNumber) +
+                      Number(attendancLocalNumber) +
+                      Number(localTransactionNumber)}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setConfirm(true)}>
+                  <Image source={remove} className="h-7 w-6" />
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 activeOpacity={0.8}
                 className="bg-[#00FF00]/50 px-3 rounded-2xl justify-center items-center h-10"
                 onPress={scanQR}
               >
                 <Text className="text-white text-[24px] font-jura-bold text-center leading-none">
-                  QR-Code
+                  {t(`dashboard.QR-Code`)}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -490,76 +806,106 @@ const AdminDashboard = () => {
               <View className="w-auto h-1/3 flex flex-row gap-3">
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl relative justify-center py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("ManageMembers");
                     router.push("/AdminManagments/ManageMembers");
                   }}
                   disabled={pressedPage === "ManageMembers"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Manage Members
-                  </Text>
+                  {!["0", 0].includes(memberLocalNumber) && (
+                    <Text className="absolute top-0 left-4 text-white text-[20px] font-jura">
+                      {memberLocalNumber}
+                    </Text>
+                  )}
+                  <Image source={memberM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center tracking-[2px] leading-none">
+                      {t(`dashboard.Manage Members`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center relative py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("ManagePayments");
                     router.push("/AdminManagments/ManagePayments");
                   }}
                   disabled={pressedPage === "ManagePayments"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Manage Payments
-                  </Text>
+                  {!["0", 0].includes(localTransactionNumber) && (
+                    <Text className="absolute top-0 left-4 text-white text-[20px] font-jura">
+                      {localTransactionNumber}
+                    </Text>
+                  )}
+                  <Image source={transactionM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center tracking-[2px] leading-none">
+                      {t(`dashboard.Manage Payments`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
               <View className="w-auto h-1/3 flex flex-row gap-3">
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl relative justify-center py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("AttendanceLogs");
                     router.push("/AdminManagments/AttendanceLogs");
                   }}
                   disabled={pressedPage === "AttendanceLogs"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Attendance Logs
-                  </Text>
+                  {!["0", 0].includes(attendancLocalNumber) && (
+                    <Text className="absolute top-0 left-4 text-white text-[20px] font-jura">
+                      {attendancLocalNumber}
+                    </Text>
+                  )}
+                  <Image source={attendanceM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center tracking-[2px] leading-none">
+                      {t(`dashboard.Attendance Logs`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("ManageMembershipPlans");
                     router.push("/AdminManagments/ManageMembershipPlans");
                   }}
                   disabled={pressedPage === "ManageMembershipPlans"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Manage Membership Plans
-                  </Text>
+                  <Image source={membershipM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center leading-none">
+                      {t(`dashboard.Manage Membership Plans`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
               <View className="w-auto h-1/3 flex flex-row gap-3">
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("ManageWorkoutPlans");
                     router.push("/AdminManagments/ManageWorkoutPlans");
                   }}
                   disabled={pressedPage === "ManageWorkoutPlans"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Manage Workout Plans
-                  </Text>
+                  <Image source={workoutM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center leading-none">
+                      {t(`dashboard.Manage Workout Plans`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center items-center"
+                  className="bg-[#383E4D] flex-1 rounded-3xl justify-center py-2 items-center gap-2"
                   onPress={() => {
                     setPressedPage("ProgramAndPlans");
 
@@ -567,12 +913,34 @@ const AdminDashboard = () => {
                   }}
                   disabled={pressedPage === "ProgramAndPlans"}
                 >
-                  <Text className="text-white text-[25px] font-jura text-center leading-none">
-                    Program & Plans
-                  </Text>
+                  <Image source={programsM} />
+                  <View>
+                    <Text className="text-white text-[25px] font-jura text-center leading-none">
+                      {t(`dashboard.Program & Plans`)}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
+            {editProfile && (
+              <UpdateProfile
+                setRemove={setEditProfile}
+                type="Edit Profile"
+                save={saveProfile}
+                errorMessage={errorMessage}
+                setErrorMessage={setErrorMessage}
+                loading={loadings}
+                adminData={adminData}
+              />
+            )}
+            {confirm && (
+              <Confirmation
+                setRemove={setConfirm}
+                title="Are you sure?"
+                content="This will delete all offline datas before sync"
+                onConfirmed={emptyLocalData}
+              />
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

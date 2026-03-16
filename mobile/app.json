@@ -40,7 +40,8 @@
       ],
       "expo-font",
       "@react-native-community/datetimepicker",
-      "react-native-video"
+      "react-native-video",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

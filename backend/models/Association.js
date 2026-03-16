@@ -7,6 +7,7 @@ import WorkoutPlan from "./WorkoutPlan.js";
 import Image from "./Image.js";
 import Video from "./Video.js";
 import Admin from "./Admin.js";
+import Program from "./Program.js";
 
 const association = () => {
   //a memeber can have many attendance logs but an attendance log can only have one member - one to many

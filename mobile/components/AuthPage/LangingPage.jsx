@@ -22,7 +22,7 @@ const LangingPage = () => {
             {t("landingPage.Address Tigray, Axum, Edaga Hamus")}
           </Text>
           <Text className="text-white text-[15px] font-jura-bold">
-            {t("landingPage.Contact")} +251 938985735, +251
+            {t("landingPage.Contact")} +251919847725, +251938985735
           </Text>
         </View>
       </View>

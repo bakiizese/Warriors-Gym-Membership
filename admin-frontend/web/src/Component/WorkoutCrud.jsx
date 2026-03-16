@@ -63,7 +63,7 @@ const WorkoutCrud = ({
                 src={
                   workoutData.workout_video instanceof File
                     ? URL.createObjectURL(workoutData.workout_video)
-                    : `http://${ADDRESS}/${workoutData.workout_video}`
+                    : `${ADDRESS}/${workoutData.workout_video}`
                 }
                 className="w-full h-full object-contain"
                 controls

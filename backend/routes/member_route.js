@@ -16,6 +16,7 @@ import { uploadFields } from "../utils/upload.js";
 import fs from "fs";
 import path from "path";
 import { membershipCalculate } from "../utils/logic.js";
+import Program from "../models/Program.js";
 
 const memberRouter = express.Router();
 
@@ -88,9 +89,10 @@ memberRouter.put("/profile", uploadFields, member_auth, async (req, res) => {
       if (!checkPassword) {
         return res.status(400).json({ error: "incorrect oldPassword" });
       }
-      const hash_password = hash_password(updateData["password"]);
+      const hash_password = await hash_password(updateData["password"]);
       user.password = hash_password;
     }
+
     if (
       updateData["phone_number"] &&
       updateData["phone_number"] !== user.phone_number
@@ -492,4 +494,19 @@ memberRouter.get("/workoutPlan", member_auth, async (req, res) => {
     return res.status(500).json({ error: err });
   }
 });
+
+//programs
+memberRouter.get("/programs", member_auth, async (req, res) => {
+  try {
+    const programs = await Program.findAll({
+      limit: 50,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({ programs: programs });
+  } catch (err) {
+    return res.status(500).json({ error: err });
+  }
+});
+
 export default memberRouter;

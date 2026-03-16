@@ -1,18 +1,10 @@
 import CommonEdit from "./CommonEdit";
-import {
-  Image,
-  Keyboard,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import edit from "@/assets/icons/edit.png";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Video } from "react-native-video";
+import { useTranslation } from "react-i18next";
 
 const WorkoutCrud = ({
   type,
@@ -33,6 +25,7 @@ const WorkoutCrud = ({
     workout_level: updateData.workout_level || "",
     workout_video: updateData?.video?.path || "",
   });
+  const { t } = useTranslation();
   const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
 
   const pickImage = async () => {
@@ -89,7 +82,9 @@ const WorkoutCrud = ({
                 paused={true}
               />
             ) : (
-              <Text className="text-white font-jura-bold">Add Video</Text>
+              <Text className="text-white font-jura-bold">
+                {t("components.Add Video")}
+              </Text>
             )}
             <TouchableOpacity
               activeOpacity={0.9}
@@ -106,7 +101,7 @@ const WorkoutCrud = ({
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-2">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
             <Text className="text-white text-[18px] font-jura-bold">
-              Workout title
+              {t("components.Workout title")}
             </Text>
           </View>
           <TextInput
@@ -122,7 +117,9 @@ const WorkoutCrud = ({
         </View>
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-2">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
-            <Text className="text-white text-[18px] font-jura-bold">Reps</Text>
+            <Text className="text-white text-[18px] font-jura-bold">
+              {t("components.Reps")}
+            </Text>
           </View>
           <View className="flex flex-row justify-center items-center">
             <TextInput
@@ -136,13 +133,15 @@ const WorkoutCrud = ({
               className="text-white text-[18px] h-full font-jura"
             />
             <Text className="text-white text-[18px] h-full font-jura-bold leading-none">
-              reps
+              {t("components.reps")}
             </Text>
           </View>
         </View>
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-2">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
-            <Text className="text-white text-[18px] font-jura-bold">Sets</Text>
+            <Text className="text-white text-[18px] font-jura-bold">
+              {t("components.Sets")}
+            </Text>
           </View>
           <View className="flex flex-row justify-center items-center">
             <TextInput
@@ -156,13 +155,15 @@ const WorkoutCrud = ({
               className="text-white text-[18px] h-full font-jura"
             />
             <Text className="text-white text-[18px] h-full font-jura-bold leading-none">
-              sets
+              {t("components.sets")}
             </Text>
           </View>
         </View>
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-2">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
-            <Text className="text-white text-[18px] font-jura-bold">Break</Text>
+            <Text className="text-white text-[18px] font-jura-bold">
+              {t("components.Breaks")}
+            </Text>
           </View>
           <View className="flex flex-row justify-center items-center">
             <TextInput
@@ -179,14 +180,14 @@ const WorkoutCrud = ({
               className="text-white text-[18px] h-full font-jura"
             />
             <Text className="text-white text-[18px] h-full font-jura-bold leading-none">
-              mins
+              {t("components.mins")}
             </Text>
           </View>
         </View>
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-2">
           <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl items-center">
             <Text className="text-white text-[18px] font-jura-bold">
-              Workout level
+              {t("components.Workout level")}
             </Text>
           </View>
           <TextInput

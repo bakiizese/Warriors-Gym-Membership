@@ -1,9 +1,9 @@
-post http://localhost:3000/auth/sign-up/member
+post http://localhost:5000/auth/sign-up/member
 Content-Type: application/json
 
 {
     "full_name": "bereket zeselassie",
-    "phone_number": "938792",
+    "phone_number": "0900011100",
     "password": " ",
     "language": "eng",
     "admin_level": "admin",
@@ -16,13 +16,17 @@ Content-Type: application/json
 }
 
 ###
-get http://localhost:3000/admin/me
+post http://localhost:5000/auth/sign-in/admin
 Content-Type: application/json
-Authorization: Bearer asdasdasdas
+
+{
+    "phone_number": "938792",
+    "password": " "
+}
 
 
 ###
-post http://localhost:3000/auth/sign-up/admin
+post http://localhost:5000/auth/sign-up/admin
 Content-Type: application/json
 
 {
@@ -35,6 +39,20 @@ Content-Type: application/json
 
 
 ###
-get http://192.168.1.8:3000/admin/members
+get http://192.168.1.8:5000/admin/members
 Content-Type: application/json
 
+
+###
+post http://localhost:5000/admin/programs
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAyZGI0OWM0LWQ5NjMtNGM0NC05ZTVmLTVjMWFjNTUyMTJjNSIsInBob25lX251bWJlciI6IjkzODc5MiIsImlhdCI6MTc3MjgxNzc2MX0._iPt3Iqh0FLc0IemiuYslzhvV88s71LfWl34wIQgN8I
+
+{
+    "content": "https://warriorsgymmembership.net.et/ping"
+}
+
+###
+get http://localhost:5000/admin/programs
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAyZGI0OWM0LWQ5NjMtNGM0NC05ZTVmLTVjMWFjNTUyMTJjNSIsInBob25lX251bWJlciI6IjkzODc5MiIsImlhdCI6MTc3MjgxNzc2MX0._iPt3Iqh0FLc0IemiuYslzhvV88s71LfWl34wIQgN8I

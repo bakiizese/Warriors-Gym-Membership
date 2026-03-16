@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import remove from "../../src/assets/icons/delete.png";
 import profile from "../../src/assets/icons/profile.png";
@@ -202,9 +201,7 @@ const ManageMembers = () => {
                   />
 
                   <img
-                    src={
-                      item.image ? `http://${ADDRESS}/${item.image}` : profile
-                    }
+                    src={item.image ? `${ADDRESS}/${item.image}` : profile}
                     className="h-[49px] w-[49px] rounded-full border border-green-500 object-cover"
                   />
                 </div>

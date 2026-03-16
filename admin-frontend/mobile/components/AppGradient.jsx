@@ -1,5 +1,6 @@
 import React from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const AppGradient = ({ children }) => {
   return (

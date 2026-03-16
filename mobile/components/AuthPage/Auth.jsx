@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import i18n from "../../i18n";
-import ApiClient, { fetchUrl } from "../../utils/ApiClient";
+import ApiClient from "../../utils/ApiClient";
 import Age from "./Attributes/Age";
 import Gender from "./Attributes/Gender";
 import Height from "./Attributes/Height";
@@ -134,7 +134,6 @@ const Auth = ({ path } = {}) => {
       setErrorMessage("");
     } catch (error) {
       if (!error.response) {
-        fetchUrl();
       }
       if (axios.isAxiosError(error)) {
         const backendError = error.response?.data;
@@ -167,9 +166,6 @@ const Auth = ({ path } = {}) => {
       console.log("fetch regitration", res.data.user);
       router.replace({ pathname: "/AuthPage", params: { path: 1 } });
     } catch (err) {
-      if (!err.response) {
-        fetchUrl();
-      }
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
@@ -218,7 +214,6 @@ const Auth = ({ path } = {}) => {
       return "user exists with this phone number";
     } catch (err) {
       if (!err.response) {
-        fetchUrl();
       }
       if (axios.isAxiosError(err)) {
         if (!err.response) {

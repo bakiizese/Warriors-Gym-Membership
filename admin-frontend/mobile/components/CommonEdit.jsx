@@ -4,13 +4,13 @@ import {
   Keyboard,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import remove from "../assets/icons/remove.png";
 import { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 
 const CommonEdit = ({
   children,
@@ -21,6 +21,7 @@ const CommonEdit = ({
   title,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -90,7 +91,7 @@ const CommonEdit = ({
           onPress={checkData}
         >
           <Text className="text-white text-[32px] font-jura-bold leading-none">
-            Save
+            {t("components.Save")}
           </Text>
         </TouchableOpacity>
       </View>

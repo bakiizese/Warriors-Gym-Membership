@@ -3,32 +3,32 @@ import NetInfo from "@react-native-community/netinfo";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
-  Text,
-  TouchableOpacity,
-  View,
-  TouchableWithoutFeedback,
+  ImageBackground,
   RefreshControl,
   ScrollView,
-  ImageBackground,
-  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 
+import axios from "axios";
+import * as FileSystem from "expo-file-system/legacy";
+import { useTranslation } from "react-i18next";
+import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
+
+import pp from "../assets/icons/pp.png";
+import wp from "../assets/icons/wp.png";
+
 import AppGradient from "../components/AppGradient";
-import ApiClient, { fetchUrl, getAddress } from "../utils/ApiClient";
-import axios from "axios";
-import QRCode from "react-native-qrcode-svg";
-import sendNFCData from "../utils/sendNFCData";
-import workoutPlanImg from "../assets/images/workoutPlan.png";
-import programPlans from "../assets/images/programPlans.png";
 import AttendanceHead from "../components/AttendanceHead";
-import { maleImages } from "../constants/motivation-image";
-import { femaleImages } from "../constants/motivation-image";
+import { femaleImages, maleImages } from "../constants/motivation-image";
 import i18n from "../i18n";
-import { useTranslation } from "react-i18next";
-import * as FileSystem from "expo-file-system/legacy";
+import ApiClient from "../utils/ApiClient";
 
 export default function MemberDashboard() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function MemberDashboard() {
   const [isProcess, setIsProcess] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [lineSignal, setLineSignal] = useState("");
-  const ADDRESS = getAddress();
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const [attendanceDays, setAttendanceDays] = useState([]);
   const { t } = useTranslation();
   let token;
@@ -85,52 +85,61 @@ export default function MemberDashboard() {
     setIsOffline(true);
     console.log("in Offline");
     const userData = await AsyncStorage.getItem("userData");
-    const parseUserData = JSON.parse(userData);
-
-    setUserData(parseUserData ?? {});
-
+    if (userData) {
+      const parseUserData = JSON.parse(userData);
+      setUserData(parseUserData ?? {});
+    }
     const MembershipData = await AsyncStorage.getItem("membership");
-    const parseMembershipData = JSON.parse(MembershipData);
-    setMembership(parseMembershipData ?? {});
+    if (MembershipData) {
+      const parseMembershipData = JSON.parse(MembershipData);
+      setMembership(parseMembershipData ?? {});
+    }
 
     const attendanceLogData = await AsyncStorage.getItem("attendanceLog");
-    const parseAttendanceLog = JSON.parse(attendanceLogData);
-    setAttendanceLog(parseAttendanceLog ?? []);
-    setAttendanceDays(
-      attendanceToNumber(
-        parseAttendanceLog ? parseAttendanceLog.slice(-5) : [],
-      ),
-    );
+    if (attendanceLogData) {
+      const parseAttendanceLog = JSON.parse(attendanceLogData);
+      setAttendanceLog(parseAttendanceLog ?? []);
+      setAttendanceDays(
+        attendanceToNumber(
+          parseAttendanceLog ? parseAttendanceLog.slice(-5) : [],
+        ),
+      );
+    }
   };
 
   const onlineData = async () => {
     setPressed("");
-    fetchUrl();
     setIsOffline(false);
     token = await AsyncStorage.getItem("userToken");
-    // console.log("api-", ApiClient.defaults.baseURL);
+    if (!token) {
+      router.replace("/AuthPage");
+      return;
+    }
     try {
       const res = await ApiClient.get("/member/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      await AsyncStorage.setItem("userData", JSON.stringify(res.data.member));
       const userD = res.data.member;
+
+      await AsyncStorage.setItem("userData", JSON.stringify(userD));
 
       if (res?.data?.member?.image) {
         setLoading(true);
-        await saveFile(res?.data?.member);
         setLoading(false);
+        saveFile(res?.data?.member);
       }
+
       setUserData(userD);
       i18n.changeLanguage(userD.language);
       fetchMembership();
       fetchAttendance();
+      fetchMembershipPlans();
+      fetchPrograms();
     } catch (err) {
+      offlineData();
       if (axios.isAxiosError(err)) {
         if (!err.response) {
           console.log("backend not responding");
-          offlineData();
-          return;
         } else if (
           err.response?.status === 400 ||
           err.response?.status === 401
@@ -148,6 +157,7 @@ export default function MemberDashboard() {
       } else {
         console.log("An unexpected error occurred", err);
       }
+      return;
     }
   };
 
@@ -168,7 +178,6 @@ export default function MemberDashboard() {
         `${ADDRESS}/${fileUri}`,
         localpath,
       );
-      console.log("uri", uri);
       if (uri) {
         member.image = uri;
         await AsyncStorage.setItem("userData", JSON.stringify(member));
@@ -355,7 +364,6 @@ export default function MemberDashboard() {
 
   const checkIn = () => {
     setIsProcess("qrcode");
-    sendNFCData(userData.id);
     saveAttendance();
   };
 
@@ -366,6 +374,57 @@ export default function MemberDashboard() {
       (membership.membershipPlan.plan_type === "Ticket" && remainingTicket <= 0)
     );
   };
+
+  const fetchMembershipPlans = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    try {
+      const res = await ApiClient.get("/member/membership_plans", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await AsyncStorage.setItem(
+        "membershipPlan",
+        JSON.stringify(res.data.membershipPlan),
+      );
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
+
+  const fetchPrograms = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+
+    try {
+      const res = await ApiClient.get("/member/programs", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await AsyncStorage.setItem("programs", JSON.stringify(res.data.programs));
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 400 || err.response?.status === 401) {
+          console.log("token error");
+          await AsyncStorage.clear();
+          router.replace("/AuthPage");
+          return;
+        }
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+    }
+  };
+
   return (
     <AppGradient>
       <SafeAreaView className="flex-1 relative py-3">
@@ -415,7 +474,7 @@ export default function MemberDashboard() {
                       ? {
                           uri: userData?.image.includes("file://")
                             ? userData?.image
-                            : `${ADDRESS}/${userData.image}`,
+                            : null,
                         }
                       : profile
                   }
@@ -496,10 +555,10 @@ export default function MemberDashboard() {
                 </View>
               </>
             )}
-            <View className="w-full flex flex-row justify-evenly my-4 gap-5">
+            <View className="w-full flex flex-row justify-evenly my-2 gap-5">
               <TouchableOpacity
                 activeOpacity={0.5}
-                className={`border-2 ${checkInAvailable() ? "bg-black/30" : "border-[#00FF00]"}  h-[50px] w-[130px] flex justify-center items-center rounded-3xl`}
+                className={`border-2 ${checkInAvailable() ? "bg-black/30" : "border-[#00FF00]"}  h-[40px] w-[130px] flex justify-center items-center rounded-3xl`}
                 onPress={() => checkIn()}
                 disabled={checkInAvailable()}
               >
@@ -509,7 +568,7 @@ export default function MemberDashboard() {
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.5}
-                className={`border-2 ${checkInAvailable() ? "bg-black/30" : "border-[#00FF00]"} h-[50px] w-[133px] flex justify-center items-center rounded-3xl`}
+                className={`border-2 ${checkInAvailable() ? "bg-black/30" : "border-[#00FF00]"} h-[40px] w-[133px] flex justify-center items-center rounded-3xl`}
                 disabled={checkInAvailable()}
               >
                 <Text className="text-white text-[21px] font-jura-bold leading-none">
@@ -525,12 +584,13 @@ export default function MemberDashboard() {
                 router.push("./MemberPages/Membership");
               }}
               style={{
-                backgroundColor:
-                  daysLeft <= 5 ||
-                  (membership?.membershipPlan?.plan_type === "Ticket" &&
-                    remainingTicket <= 3)
+                backgroundColor: membership?.membershipPlan
+                  ? daysLeft <= 5 ||
+                    (membership?.membershipPlan?.plan_type === "Ticket" &&
+                      remainingTicket <= 3)
                     ? "#ef4444BF"
-                    : "#AC8C2DBF",
+                    : "#AC8C2DBF"
+                  : "#AC8C2DBF",
               }}
               disabled={pressed === "membership&payment"}
             >
@@ -604,7 +664,7 @@ export default function MemberDashboard() {
             <View className="flex-1 pb-3 pt-1 flex-col gap-1">
               <TouchableOpacity
                 activeOpacity={0.7}
-                className="bg-black relative mx-3 min-h-[140px] h-[50%] rounded-3xl overflow-hidden justify-center items-center mb-2"
+                className="bg-black relative mx-3 flex-1 rounded-3xl overflow-hidden justify-center items-center mb-2"
                 onPress={() => {
                   (setPressed("workout"),
                     router.push("./MemberPages/Workout/WorkoutPlan"));
@@ -612,23 +672,31 @@ export default function MemberDashboard() {
                 disabled={pressed === "workout"}
               >
                 <ImageBackground
-                  source={workoutPlanImg}
+                  source={wp}
                   resizeMode="cover"
                   className="absolute h-full w-full"
                 />
-                <Text className="text-white text-[30px] font-jura-bold leading-none">
+                <Text className="text-white text-[30px] my-3 font-jura-bold leading-none">
                   {t("dashboard.Workout Plans")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.7}
-                className="bg-black relative mx-3 min-h-[140px] h-[50%] rounded-3xl overflow-hidden justify-center items-center"
+                className="bg-black relative mx-3 flex-1 rounded-3xl overflow-hidden justify-center items-center"
+                onPress={() => {
+                  (setPressed("program"),
+                    router.push("./MemberPages/Programs"));
+                }}
+                disabled={pressed === "program"}
               >
                 <ImageBackground
-                  source={programPlans}
+                  source={pp}
                   resizeMode="cover"
                   className="absolute h-full w-full"
                 />
+                <Text className="text-white text-[30px] text-center font-jura-bold leading-none">
+                  {t("dashboard.Programs and Competitions")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

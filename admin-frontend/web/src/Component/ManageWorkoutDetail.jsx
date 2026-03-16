@@ -71,7 +71,7 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
     formData.append("metadata", JSON.stringify(saveWorkoutData));
 
     try {
-      await axios.post(`http://${ADDRESS}/admin/workout`, formData, {
+      await axios.post(`${ADDRESS}/admin/workout`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -109,7 +109,7 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
     formData.append("metadata", JSON.stringify(updateWorkoutData));
 
     try {
-      await axios.put(`http://${ADDRESS}/admin/workoutUpdate`, formData, {
+      await axios.put(`${ADDRESS}/admin/workoutUpdate`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -147,12 +147,12 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
         </div>
 
         {workouts.length > 0 && currentVideo && (
-          <div className="flex-1 flex flex-row">
-            <div className="h-[250px] p-2 border-b border-black">
-              <div className="w-[415px] h-full bg-black rounded-2xl flex justify-center items-center overflow-hidden">
+          <div className="flex-1 flex flex-col">
+            <div className="h-full p-2 border-b border-black flex flex-row">
+              <div className="w-[70%] h-[70%] bg-black rounded-2xl flex justify-center items-center overflow-hidden">
                 {currentVideo?.video?.path ? (
                   <video
-                    src={`http://${ADDRESS}/${currentVideo.video.path}`}
+                    src={`${ADDRESS}/${currentVideo.video.path}`}
                     controls
                     autoPlay
                     loop
@@ -164,26 +164,23 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
                 )}
               </div>
 
-              <div className="flex mt-3">
+              <div className="flex mt-3 flex-col flex-1">
                 <div className="flex-1 pl-3">
-                  <p className="text-white font-jura-bold text-[22px]">
+                  <p className="text-white font-jura-bold text-[30px]">
                     {currentVideo?.workout_title}
                   </p>
-                  <p className="text-white font-jura text-[18px]">
+                  <p className="text-white font-jura text-[25px]">
                     {currentVideo?.workout_break} mins break
                   </p>
-                </div>
-
-                <div className="w-[120px] text-right pr-3">
-                  <p className="text-white font-jura">
+                  <p className="text-white font-jura text-[25px]">
                     {currentVideo?.workout_rep} reps
                   </p>
-                  <p className="text-white font-jura">
+                  <p className="text-white font-jura text-[25px]">
                     {currentVideo?.workout_sets} sets
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-2 ml-3">
+                <div className="flex flex-col gap-2 mx-14">
                   <button
                     className="bg-[#aaa1a1] px-3 py-1 rounded-md text-white"
                     onClick={() => {
@@ -204,9 +201,9 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
               </div>
             </div>
 
-            <div className="h-[700px] border-2 border-black/20 rounded-xl w-full overflow-y-auto mb-4">
+            <div className="h-[400px] border-2 border-black/20 rounded-xl w-full overflow-y-auto mb-4">
               {workouts.map((item, index) => (
-                <div key={index} className="h-[140px] w-full flex p-2 gap-2">
+                <div key={index} className="h-[140px] w-[600px] flex p-2 gap-2">
                   <button
                     onClick={() => setCurrentVideo(item)}
                     className="flex flex-1 gap-2 text-left"
@@ -236,7 +233,7 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
                     </div>
                   </button>
 
-                  <div className="flex flex-col gap-2 justify-center">
+                  <div className="flex flex-col gap-2 justify-center w-[130px]">
                     <button
                       className="bg-[#aaa1a1] px-3 py-1 rounded-md text-white"
                       onClick={() => {

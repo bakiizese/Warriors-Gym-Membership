@@ -32,7 +32,7 @@ const AttendanceCalendar = ({ selected }) => {
   return (
     <View className="flex-1 px-3 justify-center">
       <Calendar
-        style={{ backgroundColor: "#00FF0066", height: 350, borderRadius: 20 }}
+        style={{ backgroundColor: "#00FF0066", height: 365, borderRadius: 20 }}
         markedDates={marked}
       />
     </View>

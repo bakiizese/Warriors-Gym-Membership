@@ -21,7 +21,7 @@ const SelectLanguage = ({ primary, setPrimary }) => {
   const { t } = useTranslation();
 
   return (
-    <View className="absolute justify-center items-center z-30">
+    <View className="absolute justify-center items-center z-30 w-full">
       <TouchableOpacity
         onPress={() => setLangSelector(!langSelector)}
         activeOpacity={0}
