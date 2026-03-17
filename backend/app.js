@@ -32,9 +32,7 @@ app.use(cors());
 dotenv.config();
 association();
 
-sequelize
-  .sync({ alert: true })
-  .then(() => console.log("tables created successfuly"));
+sequelize.sync().then(() => console.log("tables created successfuly"));
 
 //routes
 app.use("/auth", authRouter);
