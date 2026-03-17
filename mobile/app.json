@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Warriors",
+    "slug": "warriors-members-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundImage": "./assets/images/logo.png",
+        "monochromeImage": "./assets/images/logo.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.bereketzese.warriorsmembersmobile"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/logo.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      "react-native-video",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d3a10551-4772-4286-9722-a29c3f6455c5"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.bereketzese.warriorsmembersmobile"
+    }
+  }
+}

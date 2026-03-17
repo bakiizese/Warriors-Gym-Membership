@@ -1,0 +1,332 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  FlatList,
+  ImageBackground,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import AppGradient from "../../../components/AppGradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import ApiClient from "../../../utils/ApiClient";
+import axios from "axios";
+
+import chestWorkout from "../../../assets/images/workoutBgImages/Chest.jpeg";
+import backWorkout from "../../../assets/images/workoutBgImages/Back.jpeg";
+import shoulderWorkout from "../../../assets/images/workoutBgImages/Shoulder.jpeg";
+import armsWorkout from "../../../assets/images/workoutBgImages/Arms.jpeg";
+import absWorkout from "../../../assets/images/workoutBgImages/Abs.jpeg";
+
+import calfWorkout from "../../../assets/images/workoutBgImages/Calf.jpeg";
+import quadWorkout from "../../../assets/images/workoutBgImages/Quad.jpeg";
+import gluteHamstringWorkout from "../../../assets/images/workoutBgImages/GluteHamstring.jpeg";
+import { useCallback, useEffect, useState } from "react";
+import * as FileSystem from "expo-file-system/legacy";
+import { useTranslation } from "react-i18next";
+
+import workoutLocalData from "../../../constants/localWorkoutData";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const Workout = () => {
+  const router = useRouter();
+  const [workoutData, setWorkoutData] = useState();
+  const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
+  const { t } = useTranslation();
+  const [pressed, setPressed] = useState("");
+
+  const workoutRoute = {
+    upperBody: [
+      {
+        title: "Chest Workout",
+        bgImage: chestWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Chest",
+            workoutData: JSON.stringify(workoutData?.Chest || []),
+          },
+        },
+      },
+      {
+        title: "Back Workout",
+        bgImage: backWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Back",
+            workoutData: JSON.stringify(workoutData?.Back || []),
+          },
+        },
+      },
+      {
+        title: "Shoulder Workout",
+        bgImage: shoulderWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Shoulder",
+            workoutData: JSON.stringify(workoutData?.Shoulder || []),
+          },
+        },
+      },
+      {
+        title: "Arm Workout",
+        bgImage: armsWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Arm",
+            workoutData: JSON.stringify(workoutData?.Arm || []),
+          },
+        },
+      },
+      {
+        title: "Abs Workout",
+        bgImage: absWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Abs",
+            workoutData: JSON.stringify(workoutData?.Abs || []),
+          },
+        },
+      },
+    ],
+    lowerBody: [
+      {
+        title: "Calf Workout",
+        bgImage: calfWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Calf",
+            workoutData: JSON.stringify(workoutData?.Calf || []),
+          },
+        },
+      },
+      {
+        title: "Quad Workout",
+        bgImage: quadWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Quad",
+            workoutData: JSON.stringify(workoutData?.Quad || []),
+          },
+        },
+      },
+      {
+        title: "Glute & Hamstring Workout",
+        bgImage: gluteHamstringWorkout,
+        link: {
+          pathname: "./WorkoutDetail",
+          params: {
+            workoutTitle: "Glute & Hamstring",
+            workoutData: JSON.stringify(
+              workoutData?.["Glute & Hamstring"] || [],
+            ),
+          },
+        },
+      },
+    ],
+  };
+
+  useEffect(() => {
+    setPressed("");
+    setWorkoutData(workoutLocalData);
+    fetchWorkout();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setPressed("");
+    }, []),
+  );
+
+  const fetchWorkout = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    try {
+      const res = await ApiClient.get("/member/workoutPlan", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("in onlie");
+      const { workoutPlan, length } = res.data;
+      fetchOffline(workoutPlan);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        console.log(err.response?.status);
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      const workout = await AsyncStorage.getItem("workoutData");
+      const pasredWorkout = JSON.parse(workout);
+      fetchOffline(pasredWorkout);
+    }
+  };
+
+  const saveFile = async (fileUri) => {
+    try {
+      const filename = fileUri?.path.split("/").pop();
+      const localpath = FileSystem.documentDirectory + filename;
+      const checkFile = await FileSystem.getInfoAsync(localpath);
+
+      if (checkFile.exists && fileUri.size === checkFile.size) {
+        // console.log("file exists -size -", checkFile.size);
+        return checkFile.uri;
+      }
+      if (fileUri?.path.includes("file://")) {
+        // console.log("edit name first");
+        const fileName = fileUri.path.split("/").pop();
+        const newFileName = `uploads/videos/${fileName}`;
+        const { uri } = await FileSystem.downloadAsync(
+          `${ADDRESS}/${newFileName}`,
+          localpath,
+        );
+        // console.log("uri", uri);
+        // console.log("file saved");
+        return uri;
+      } else {
+        try {
+          console.log("saving file", `${ADDRESS}/${fileUri?.path}`);
+          const { uri } = await FileSystem.downloadAsync(
+            `${ADDRESS}/${fileUri?.path}`,
+            localpath,
+          );
+          // console.log("uri", uri);
+          console.log("file saved");
+          return uri;
+        } catch (err) {
+          console.log("err", err);
+        }
+      }
+    } catch (err) {
+      console.log(err);
+      return 0;
+    }
+  };
+
+  const fetchOffline = async (offlineData = null) => {
+    let count = 0;
+    if (offlineData) {
+      let promises = [];
+      for (const key in offlineData) {
+        const savedFile = offlineData[key].map(async (item) => {
+          if (typeof item.video.path === "number") {
+            return;
+          }
+          const localUri = await saveFile(item.video);
+          count = count + 1;
+          console.log(count);
+          if (localUri) item.video.path = localUri;
+        });
+        promises.push(...savedFile);
+      }
+      await Promise.all(promises);
+
+      await AsyncStorage.setItem("workoutData", JSON.stringify(offlineData));
+      console.log("done");
+    }
+    console.log("in offlineee");
+    const workouts = await AsyncStorage.getItem("workoutData");
+    const parsedWorkouts = JSON.parse(workouts);
+    let workout = {};
+    if (parsedWorkouts) {
+      for (const key in workoutLocalData) {
+        if (parsedWorkouts[key]) {
+          workout[key] = parsedWorkouts[key];
+          workout[key].push(...workoutLocalData[key]);
+        } else {
+          workout[key] = workoutLocalData[key];
+        }
+      }
+      setWorkoutData(workout);
+    } else {
+      setWorkoutData(workoutLocalData);
+    }
+  };
+
+  return (
+    <AppGradient>
+      <SafeAreaView className="flex-1" edges={["bottom"]}>
+        <View className="flex-1">
+          <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
+            <Pressable onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={33} color="black" />
+            </Pressable>
+            <Text className="text-white h-10 pl-2 leading-none text-[30px] font-jura-bold">
+              {t("workout.Workout Plans")}
+            </Text>
+          </View>
+          <View className="flex-1 mb-6 mt-2">
+            <View className="flex-1">
+              <Text className="text-white px-5 text-[30px] font-jura-bold">
+                {t("workout.Upper Body")}
+              </Text>
+              <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
+                {workoutRoute.upperBody.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    key={item.title}
+                    className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
+                    onPress={() => {
+                      (setPressed(item.title), router.push(item.link));
+                    }}
+                    disabled={pressed === item.title}
+                  >
+                    <ImageBackground
+                      source={item.bgImage}
+                      resizeMode="cover"
+                      className="h-full w-full justify-center items-center"
+                    >
+                      <Text className="text-white text-[35px] font-jura-bold">
+                        {t(`workout.${item.title}`)}
+                      </Text>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <View className="flex-1">
+              <Text className="text-white px-5 text-[30px] font-jura-bold">
+                {t("workout.Lower Body")}
+              </Text>
+              <ScrollView className="flex-1 border-[2px] px-2 py-1 border-[#7E7676] rounded-2xl mx-3 ">
+                {workoutRoute.lowerBody.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    key={item.title}
+                    className="h-[135px] my-1 w-full rounded-2xl overflow-hidden"
+                    onPress={() => {
+                      (setPressed(item.title), router.push(item.link));
+                    }}
+                    disabled={pressed === item.title}
+                  >
+                    <ImageBackground
+                      source={item.bgImage}
+                      resizeMode="cover"
+                      className="h-full w-full justify-center items-center"
+                    >
+                      <Text className="text-white text-[35px] font-jura-bold text-center">
+                        {t(`workout.${item.title}`)}
+                      </Text>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    </AppGradient>
+  );
+};
+
+export default Workout;
