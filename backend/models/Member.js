@@ -63,6 +63,10 @@ Member.init(
       allowNull: true,
       defaultValue: [],
     },
+    registration_Date: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
     sequelize,

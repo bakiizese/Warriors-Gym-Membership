@@ -35,7 +35,6 @@ memberRouter.get("/me", member_auth, async (req, res) => {
 });
 
 memberRouter.put("/profile", uploadFields, member_auth, async (req, res) => {
-  console.log("update");
   try {
     let filePath = "";
     if (req.files && req.files.file) {

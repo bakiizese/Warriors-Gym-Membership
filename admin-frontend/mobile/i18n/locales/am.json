@@ -1,6 +1,7 @@
 {
   "dashboard": {
     "admin": "አድሚን",
+    "Admin": "አድሚን",
     "Select Language": "ቋንቋ ይምረጡ",
     "Total Active Members": "ጠቅላላ ንቁ አባላት",
     "Today Visits": "የዛሬ ጉብኝቶች",
@@ -88,6 +89,7 @@
     "Add Program": "ፕሮግራም ጨምር"
   },
   "components": {
+    "Date": "ቀን",
     "Are you sure you want to delete this?": "ይህን ለመሰረዝ እርግጠኛ ነዎት?",
     "Are you sure you want to delete this? This Membership has active users": "ይህን ለመሰረዝ እርግጠኛ ነዎት? ይህ አባልነት ንቁ ተጠቃሚዎች አሉት።",
     "This will delete all offline datas before sync": "ይህ ከ sync በፊት ሁሉንም ከኦፍላይን ዳታ ያጥፋል።",

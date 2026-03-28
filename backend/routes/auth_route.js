@@ -3,7 +3,6 @@ import Member from "../models/Member.js";
 import Admin from "../models/Admin.js";
 import { hash_password, verify_password } from "../utils/password.js";
 import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
-import MembershipPlan from "../models/MembershipPlan.js";
 
 const authRouter = express.Router();
 
@@ -24,11 +23,17 @@ const memberData = [
   "age",
   "password",
   "language",
+  "registration_Date",
 ];
 
 export async function signUp(req, res) {
   const userType = req.params.userType;
-  const userData = req.body;
+  const userData = JSON.parse(req.body.metadata);
+
+  if (req.imageFile) {
+    userData.image = req.imageFile;
+  }
+
   //check if all required data exist
   for (const key of userType === "admin" ? adminData : memberData) {
     if (!userData[key]) {

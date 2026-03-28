@@ -1,6 +1,7 @@
 {
   "dashboard": {
-    "admin": "admin",
+    "admin": "Admin",
+    "Admin": "Admin",
     "Select Language": "Select Language",
     "Total Active Members": "Total Active Members",
     "Today Visits": "Today Visits",
@@ -60,6 +61,7 @@
     "Add Program": "Add Program"
   },
   "components": {
+    "Date": "Date",
     "Are you sure you want to delete this?": "Are you sure you want to delete this?",
     "Are you sure you want to delete this? This Membership has active users": "Are you sure you want to delete this? This Membership has active users",
     "This will delete all offline datas before sync": "This will delete all offline datas before sync",

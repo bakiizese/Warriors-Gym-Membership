@@ -21,6 +21,17 @@ const AddTransaction = ({
   setErrorMessage,
   errorMessage,
 }) => {
+  const nowDate = new Date();
+  const formatDate = (createdAt) => {
+    const date = new Date(createdAt);
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
   const [transactionData, setTransactionData] = useState({
     payment_method: "Cash",
     payer_id: "",
@@ -31,6 +42,7 @@ const AddTransaction = ({
     ticket_amount: "",
     duration_days: "",
     membership_id: "",
+    paid_at: formatDate(nowDate) || "",
   });
   const [membershipData, setMembershipData] = useState([]);
   const { t } = useTranslation();
@@ -192,6 +204,27 @@ const AddTransaction = ({
               placeholderTextColor={"#FFFFFF6E"}
               className="text-white text-[18px] h-full font-jura"
             />
+          </View>
+          <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center gap-3">
+            <View className="bg-[#4CA24F] py-[2px] px-2 rounded-xl w-[80px] items-center">
+              <Text className="text-white text-[18px] font-jura-bold">
+                {t("components.Date")}
+              </Text>
+            </View>
+            <View className="flex flex-row justify-center items-center">
+              <TextInput
+                value={transactionData.paid_at}
+                onChangeText={(text) =>
+                  setTransactionData((prev) => ({
+                    ...prev,
+                    paid_at: text,
+                  }))
+                }
+                placeholder="00-00-0000"
+                placeholderTextColor={"#FFFFFF6E"}
+                className="text-white text-[18px] h-full font-jura"
+              />
+            </View>
           </View>
           <View className="justify-center gap-10 items-center h-8 w-full flex flex-row">
             <TouchableOpacity

@@ -1,12 +1,12 @@
-post http://localhost:5000/auth/sign-up/member
+post http://localhost:5000/auth/sign-up/admin
 Content-Type: application/json
 
 {
     "full_name": "bereket zeselassie",
-    "phone_number": "0900011100",
+    "phone_number": "0909",
     "password": " ",
     "language": "eng",
-    "admin_level": "admin",
+    "admin_level": "Admin",
     "gender": "male",
     "height": 120,
     "weight": 69,

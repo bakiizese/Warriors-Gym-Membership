@@ -2,7 +2,7 @@ import express from "express";
 import Member from "../models/Member.js";
 import MembershipPlan from "../models/MembershipPlan.js";
 import Admin from "../models/Admin.js";
-import { admin_auth } from "./middlewares.js ";
+import { admin_auth } from "./middlewares.js";
 import { signUp } from "./auth_route.js";
 import Membership from "../models/Membership.js";
 import { Op } from "sequelize";
@@ -161,9 +161,91 @@ adminRouter.put("/profile", uploadFields, admin_auth, async (req, res) => {
 
 //members
 //this will be handled by auth_route
-adminRouter.post("/addMember", admin_auth, async (req, res) => {
+adminRouter.post("/addMember", uploadFields, admin_auth, async (req, res) => {
   req.params.userType = "member";
+  let filePath = "";
+  if (req?.files && req?.files?.file) {
+    if (req.files?.file[0]?.path) {
+      filePath = req.files?.file[0]?.path;
+    }
+  }
+  if (typeof filePath === "string" && filePath) {
+    req.imageFile = filePath;
+  }
   return signUp(req, res);
+});
+
+adminRouter.put("/updateMember", uploadFields, admin_auth, async (req, res) => {
+  try {
+    let filePath = "";
+    if (req?.files && req?.files?.file) {
+      if (req.files?.file[0]?.path) {
+        filePath = req.files?.file[0]?.path;
+      }
+    }
+
+    const updateData = JSON.parse(req.body.metadata);
+    const memberId = updateData.id;
+    const user = await Member.findOne({ where: { id: memberId } });
+    for (const key in updateData) {
+      if (
+        ![
+          "id",
+          "createdAt",
+          "updatedAt",
+          "oldPassword",
+          "confirmPassword",
+          "password",
+          "phone_number",
+          "image",
+          "activity_status",
+        ].includes(key)
+      ) {
+        if (user[key]) {
+          user[key] = updateData[key];
+        }
+      }
+    }
+    if (user.image && filePath) {
+      fs.unlink(user["image"], (err) => {
+        if (err) {
+          console.log("unable to remove image");
+        } else {
+          console.log("image removed successfully");
+          user["image"] = null;
+        }
+      });
+    }
+
+    if (typeof filePath === "string" && filePath) {
+      user["image"] = filePath;
+    }
+
+    if (
+      updateData["phone_number"] &&
+      updateData["phone_number"] !== user.phone_number
+    ) {
+      const userCheck = await Member.findOne({
+        where: { phone_number: updateData["phone_number"] },
+      });
+      if (userCheck) {
+        return res.status(400).json({ error: "phone number exists" });
+      }
+      const newToken = gen_jwt_token({
+        id: user.id,
+        phone_number: updateData["phone_number"],
+      });
+
+      user.phone_number = updateData["phone_number"];
+      user.save();
+      return res.status(200).json({ token: newToken, user: user });
+    }
+    user.save();
+    return res.status(200).json({ user: "successfully updated" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
 });
 
 adminRouter.get("/members", admin_auth, async (req, res) => {
@@ -658,6 +740,7 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
     "payment_method",
     "amount",
     "payment_for",
+    "paid_at",
   ];
   try {
     const transactionData = req.body;
@@ -676,9 +759,10 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
         .status(400)
         .json({ error: `${transactionData.payer_id} don't exist` });
     }
-
+    const [day, month, year] = transactionData.paid_at.split("-");
+    const paid_at = new Date(year, month - 1, day);
     if (transactionData.isNew) {
-      const start_date = new Date();
+      const start_date = new Date(paid_at);
       const end_date = new Date(start_date);
 
       end_date.setDate(
@@ -723,7 +807,7 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
         return res.status(500).json({ error: "unable to renew membership" });
       }
 
-      const currentDate = new Date();
+      const currentDate = new Date(paid_at);
       const end_date = new Date(membership.end_date);
 
       const base_date =
@@ -746,7 +830,7 @@ adminRouter.post("/transaction", admin_auth, async (req, res) => {
     transactionData.payment_method =
       transactionData.payment_method + "-" + adminName;
 
-    transactionData.paid_at = String(new Date());
+    transactionData.paid_at = String(new Date(paid_at));
     transactionData.status = "Successfull";
 
     payer.activity_status = "Active";

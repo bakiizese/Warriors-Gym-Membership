@@ -20,7 +20,7 @@ import profile from "../assets/icons/profile.png";
 import AppGradient from "../components/AppGradient";
 import { Linking } from "react-native";
 import ApiClient, { ApiClientFile } from "../utils/ApiClient";
-import * as FileSystem from "expo-file-system/legacy";
+import saveImage from "../utils/saveImage";
 import { useTranslation } from "react-i18next";
 import workoutM from "../assets/icons/workoutM.png";
 import programsM from "../assets/icons/programsM.png";
@@ -177,34 +177,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const saveFile = async (user) => {
-    const fileUri = user?.image;
-    try {
-      const filename = fileUri?.split("/").pop();
-      const localpath = FileSystem.documentDirectory + filename;
-      const checkFile = await FileSystem.getInfoAsync(localpath);
-
-      if (checkFile.exists) {
-        user.image = checkFile.uri;
-        await AsyncStorage.setItem("userData", JSON.stringify(user));
-        return checkFile.uri;
-      }
-
-      const { uri } = await FileSystem.downloadAsync(
-        `${ADDRESS}/${fileUri}`,
-        localpath,
-      );
-      if (uri) {
-        user.image = uri;
-        await AsyncStorage.setItem("userData", JSON.stringify(user));
-      }
-      return uri;
-    } catch (err) {
-      console.log(err);
-      return 0;
-    }
-  };
-
   const onlineData = () => {
     const fetchAdminDashboard = async () => {
       try {
@@ -214,7 +186,8 @@ const AdminDashboard = () => {
         });
         await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
         if (res?.data?.user?.image) {
-          saveFile(res?.data?.user);
+          const savedData = await saveImage(res?.data?.user);
+          await AsyncStorage.setItem("userData", JSON.stringify(savedData));
         }
         setAdminData(res.data.user);
         i18n.changeLanguage(res.data.user.language);
@@ -375,12 +348,20 @@ const AdminDashboard = () => {
 
   const saveMember = async (personalData) => {
     const token = await AsyncStorage.getItem("adminToken");
+    const formData = new FormData();
+    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append("metadata", JSON.stringify(personalData));
     try {
-      const res = await ApiClient.post("admin/addMember", personalData, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await ApiClientFile.post(`/admin/addMember`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 10000,
       });
       return 1;
     } catch (err) {
+      console.log(err);
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
