@@ -16,17 +16,18 @@ import profile from "../../assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import MemberCrud from "../../components/MemberCrud";
 import SearchAndFilter from "../../components/SearchAndFilter";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { ApiClientFile } from "../../utils/ApiClient";
 import Confirmation from "../../components/Confirmation";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
+import edit from "@/assets/icons/edit.png";
+import saveImage from "../../utils/saveImage";
 
 const ManageMembers = () => {
   const router = useRouter();
   const [addMember, setAddMember] = useState(false);
   const [membersData, setMembersData] = useState();
   const [filteredMembersData, setFilteredMembersData] = useState([]);
-
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
@@ -38,9 +39,16 @@ const ManageMembers = () => {
   const saveMember = async (personalData) => {
     setLoading(true);
     const token = await AsyncStorage.getItem("adminToken");
+    const formData = new FormData();
+    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append("metadata", JSON.stringify(personalData));
     try {
-      const res = await ApiClient.post("admin/addMember", personalData, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await ApiClientFile.post(`/admin/addMember`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 10000,
       });
       fetchMembers();
       setAddMember(false);
@@ -50,10 +58,52 @@ const ManageMembers = () => {
         const backendError = err.response?.data;
         console.log(backendError?.error);
         const offlineSave = await saveLocal(personalData);
+        console.log("-", offlineSave);
+
         if (offlineSave) {
           setAddMember(false);
           offlineData();
         }
+        console.log(err.response?.status);
+        setLoading(false);
+
+        return;
+      } else if (err instanceof Error) {
+        console.log("Generic Error:", err.message);
+      } else {
+        console.log("An unexpected error occurred", err);
+      }
+      setLoading(false);
+    }
+  };
+
+  const updateMember = async (personalData) => {
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append("metadata", JSON.stringify(personalData));
+    const token = await AsyncStorage.getItem("adminToken");
+    try {
+      const res = await ApiClientFile.put(`/admin/updateMember`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 10000,
+      });
+      fetchMembers();
+      setAddMember(false);
+      setLoading(false);
+      console.log(res.data);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const backendError = err.response?.data;
+        console.log(backendError?.error);
+        // const offlineSave = await updateLocal(personalData);
+        // if (offlineSave) {
+        //   setAddMember(false);
+        //   offlineData();
+        // }
         setErrorMessage(backendError?.error?.message);
         console.log(err.response?.status);
         setLoading(false);
@@ -106,10 +156,71 @@ const ManageMembers = () => {
     return 1;
   };
 
+  // const updateLocal = async (personalData) => {
+  //   const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
+  //   const parsedLocalSaved = JSON.parse(localSaved);
+
+  //   const members = await AsyncStorage.getItem("members");
+  //   const paresedMembers = JSON.parse(members);
+
+  //   for (const key in paresedMembers) {
+  //     if (paresedMembers[key].phone_number === personalData.phone_number) {
+  //       paresedMembers[key] = personalData;
+
+  //       await AsyncStorage.setItem("members", JSON.stringify(paresedMembers));
+  //       return 1;
+  //     }
+  //   }
+
+  //   for (const key in parsedLocalSaved) {
+  //     if (parsedLocalSaved[key].phone_number === personalData.phone_number) {
+  //       parsedLocalSaved[key] = personalData;
+
+  //       await AsyncStorage.setItem(
+  //         "MemberLocalAdd",
+  //         JSON.stringify(parsedLocalSaved),
+  //       );
+  //       return 1;
+  //     }
+  //   }
+  //   return 0;
+  // };
+
   useEffect(() => {
     offlineData();
     fetchMembers();
   }, []);
+
+  const removeLocal = async (localId) => {
+    const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
+    const parsedLocalSaved = JSON.parse(localSaved);
+
+    const members = await AsyncStorage.getItem("members");
+    const paresedMembers = JSON.parse(members);
+
+    for (const key in paresedMembers) {
+      if (paresedMembers[key].phone_number !== localId) {
+        const clearedData = paresedMembers.filter(
+          (item) => item.phone_number !== localId,
+        );
+        await AsyncStorage.setItem("members", JSON.stringify(clearedData));
+      }
+    }
+
+    for (const key in parsedLocalSaved) {
+      if (parsedLocalSaved[key].phone_number === localId) {
+        const clearedData = parsedLocalSaved.filter(
+          (item) => item.phone_number !== localId,
+        );
+        await AsyncStorage.setItem(
+          "MemberLocalAdd",
+          JSON.stringify(clearedData),
+        );
+      }
+    }
+    setConfirm(false);
+    offlineData();
+  };
 
   const offlineData = async () => {
     const members = await AsyncStorage.getItem("members");
@@ -145,7 +256,7 @@ const ManageMembers = () => {
 
   const removeMember = async (memberId) => {
     const token = await AsyncStorage.getItem("adminToken");
-
+    console.log(memberId);
     try {
       const res = await ApiClient.delete(`admin/member/${memberId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -255,7 +366,7 @@ const ManageMembers = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               className="bg-[#56C556] rounded-[25px] h-[45px] w-[130px] px-2 items-center justify-center"
-              onPress={() => setAddMember(true)}
+              onPress={() => setAddMember("Add Member")}
             >
               <Text className="text-white leading-none text-[20px] font-jura text-center">
                 {t("manageMember.Add Member")}
@@ -277,14 +388,16 @@ const ManageMembers = () => {
                       <Image
                         source={
                           item.image
-                            ? { uri: `${ADDRESS}/${item.image}` }
+                            ? typeof item.image === "object"
+                              ? { uri: item.image.uri }
+                              : { uri: `${ADDRESS}/${item.image}` }
                             : profile
                         }
                         resizeMode="contain"
                         className="h-[49px] w-[49px] rounded-full p-2 border-[1px] border-[#00FF00]"
                       />
                     </View>
-                    <View className="w-[100px]">
+                    <View className="w-[80px]">
                       <Text className="text-black leading-none text-[18px] font-jura text-start w-44 h-6">
                         {item.full_name}
                       </Text>
@@ -300,9 +413,9 @@ const ManageMembers = () => {
                       <View className="h-[5px] w-[5px] bg-black rounded-full" />
                       <View className="h-[5px] w-[5px] bg-black rounded-full" />
                     </View>
-                    <View>
+                    <View className="w-[150px]">
                       <Text className="text-black leading-none text-[18px] font-jura text-start">
-                        {formatDate(item.createdAt)}
+                        {item.registration_Date}
                       </Text>
                       <Text className="text-black leading-none text-[18px] font-jura text-start">
                         {item.id}-{item.phone_number}
@@ -312,7 +425,18 @@ const ManageMembers = () => {
                   <TouchableOpacity
                     activeOpacity={0.8}
                     className="mx-3"
-                    onPress={() => setConfirm(item.id)}
+                    onPress={() => setAddMember(item)}
+                  >
+                    <Image source={edit} className="h-8 w-7" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    className="mx-3"
+                    onPress={() =>
+                      item?.id
+                        ? setConfirm(item.id)
+                        : setConfirm([item.phone_number, true])
+                    }
                   >
                     <Image source={remove} className="h-8 w-7" />
                   </TouchableOpacity>
@@ -324,19 +448,34 @@ const ManageMembers = () => {
               setRemove={setConfirm}
               title="Are you sure?"
               content="This will delete all datas associated with this user"
-              onConfirmed={() => removeMember(confirm)}
+              onConfirmed={() =>
+                typeof confirm === "object"
+                  ? removeLocal(confirm[0])
+                  : removeMember(confirm)
+              }
             />
           )}
-          {addMember && (
-            <MemberCrud
-              setRemove={setAddMember}
-              type="Add Member"
-              save={saveMember}
-              errorMessage={errorMessage}
-              setErrorMessage={setErrorMessage}
-              loading={loading}
-            />
-          )}
+          {addMember &&
+            (addMember === "Add Member" ? (
+              <MemberCrud
+                setRemove={setAddMember}
+                type="Add Member"
+                save={saveMember}
+                errorMessage={errorMessage}
+                setErrorMessage={setErrorMessage}
+                loading={loading}
+              />
+            ) : (
+              <MemberCrud
+                setRemove={setAddMember}
+                type="Edit Member"
+                save={updateMember}
+                errorMessage={errorMessage}
+                setErrorMessage={setErrorMessage}
+                loading={loading}
+                editData={addMember}
+              />
+            ))}
         </View>
       </SafeAreaView>
     </AppGradient>

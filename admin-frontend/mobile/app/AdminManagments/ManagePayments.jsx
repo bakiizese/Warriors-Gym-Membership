@@ -336,7 +336,9 @@ const ManagePayments = () => {
                           {item.id}
                         </Text>
                         <Text className="text-black leading-none text-[16px]  w-[100px] max-h-5 font-jura text-center">
-                          {formatDate(item.paid_at)}
+                          {item.paid_at.length > 10
+                            ? formatDate(item.paid_at)
+                            : item.paid_at}
                         </Text>
                         <Text className="text-black leading-none text-[16px] w-[150px] max-h-5 font-jura text-center">
                           {item.payment_for}

@@ -1,6 +1,7 @@
 {
   "dashboard": {
     "admin": "ኣድሚን",
+    "Admin": "ኣድሚን",
     "Select Language": "ቋንቋ ምረጽ",
     "Total Active Members": "ጠቕላላ ንቁሕ ኣባላት",
     "Today Visits": "ሎሚ ዝመጹ",
@@ -88,6 +89,7 @@
     "Add Program": "ፕሮግራም ወስኽ"
   },
   "components": {
+    "Date": "ዕለት",
     "Are you sure you want to delete this?": "እዚ ክትደምስስ ርግጸኛ ዲኻ?",
     "Are you sure you want to delete this? This Membership has active users": "እዚ ክትደምስስ ርግጸኛ ዲኻ? እዚ ኣባልነት ንቁ ተጠቃሚታት ኣለዉዎ።",
     "This will delete all offline datas before sync": "እዚ ቅድሚ sync ኩሉ ኦፍላይን ዳታ ክድምስስ እዩ።",

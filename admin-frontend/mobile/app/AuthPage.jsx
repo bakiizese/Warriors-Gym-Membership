@@ -3,7 +3,6 @@ import logo from "@/assets/images/logo.png";
 import AppGradient from "@/components/AppGradient";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import ApiClient from "../utils/ApiClient";
 import {
   default as hide_key,

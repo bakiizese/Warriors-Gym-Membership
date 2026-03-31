@@ -21,13 +21,26 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.bereketzese.warriorsadminmobile"
+      "package": "com.bereketzese.warriorsadminmobile",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_MEDIA_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow this app to use your camera",
+          "photosPermission": "Allow access to your photos"
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
