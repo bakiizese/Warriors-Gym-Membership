@@ -185,9 +185,11 @@ const AdminDashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         await AsyncStorage.setItem("adminData", JSON.stringify(res.data.user));
-        if (res?.data?.user?.image) {
-          const savedData = await saveImage(res?.data?.user);
-          await AsyncStorage.setItem("userData", JSON.stringify(savedData));
+        const adminData = res.data.user;
+        if (adminData?.image) {
+          const im = await saveImage(adminData?.image);
+          adminData["image"] = im;
+          await AsyncStorage.setItem("adminData", JSON.stringify(adminData));
         }
         setAdminData(res.data.user);
         i18n.changeLanguage(res.data.user.language);
@@ -347,6 +349,7 @@ const AdminDashboard = () => {
   };
 
   const saveMember = async (personalData) => {
+    delete personalData.id;
     const token = await AsyncStorage.getItem("adminToken");
     const formData = new FormData();
     formData.append("file", personalData.image ? personalData.image : "");
@@ -361,8 +364,27 @@ const AdminDashboard = () => {
       });
       return 1;
     } catch (err) {
-      console.log(err);
       if (axios.isAxiosError(err)) {
+        if (err.response?.status === 400) {
+          const checkingKey = [
+            "full_name",
+            "phone_number",
+            "age",
+            "weight",
+            "height",
+            "gender",
+            "registration_Date",
+          ];
+          const existData = membersData.find(
+            (member) => member.phone_number === personalData.phone_number,
+          );
+          for (const key of checkingKey) {
+            if (String(personalData[key]) !== String(existData[key])) {
+              return 0;
+            }
+          }
+          return 1;
+        }
         const backendError = err.response?.data;
         console.log(backendError?.error);
         console.log(err.response?.status);

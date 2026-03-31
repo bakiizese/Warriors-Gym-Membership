@@ -20,7 +20,6 @@ import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import CommonEdit from "./CommonEdit";
 import SelectLanguage from "./SelectLanguage";
-import { EtDatetime } from "abushakir";
 import { useEffect } from "react";
 
 const MemberCrud = ({
@@ -220,7 +219,9 @@ const MemberCrud = ({
                 : personalData.image
                   ? typeof personalData.image === "object"
                     ? { uri: personalData.image.uri }
-                    : { uri: `${ADDRESS}/${personalData.image}` }
+                    : personalData.image.includes("file://")
+                      ? { uri: personalData.image }
+                      : { uri: `${ADDRESS}/${personalData.image}` }
                   : profile
             }
             resizeMode="contain"

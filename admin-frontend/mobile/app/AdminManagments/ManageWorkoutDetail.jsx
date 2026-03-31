@@ -36,7 +36,8 @@ const ManageWorkoutDetail = () => {
 
   useEffect(() => {
     if (workoutData) {
-      const parsed = JSON.parse(workoutData);
+      const workoutD = workoutData.replace(/\\/g, "/");
+      const parsed = JSON.parse(workoutD);
       const sorted = parsed.sort(
         (a, b) => Number(a.workout_level) - Number(b.workout_level),
       );

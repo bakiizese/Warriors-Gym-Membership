@@ -99,11 +99,11 @@ const ManageMembers = () => {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
-        // const offlineSave = await updateLocal(personalData);
-        // if (offlineSave) {
-        //   setAddMember(false);
-        //   offlineData();
-        // }
+        const offlineSave = await updateLocal(personalData);
+        if (offlineSave) {
+          setAddMember(false);
+          offlineData();
+        }
         setErrorMessage(backendError?.error?.message);
         console.log(err.response?.status);
         setLoading(false);
@@ -156,35 +156,40 @@ const ManageMembers = () => {
     return 1;
   };
 
-  // const updateLocal = async (personalData) => {
-  //   const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
-  //   const parsedLocalSaved = JSON.parse(localSaved);
+  const updateLocal = async (personalData) => {
+    const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
+    const parsedLocalSaved = JSON.parse(localSaved);
 
-  //   const members = await AsyncStorage.getItem("members");
-  //   const paresedMembers = JSON.parse(members);
+    const members = await AsyncStorage.getItem("members");
+    const paresedMembers = JSON.parse(members);
 
-  //   for (const key in paresedMembers) {
-  //     if (paresedMembers[key].phone_number === personalData.phone_number) {
-  //       paresedMembers[key] = personalData;
+    for (const key in paresedMembers) {
+      if (
+        paresedMembers[key].phone_number === personalData.phone_number &&
+        !paresedMembers["id"]
+      ) {
+        paresedMembers[key] = personalData;
 
-  //       await AsyncStorage.setItem("members", JSON.stringify(paresedMembers));
-  //       return 1;
-  //     }
-  //   }
+        await AsyncStorage.setItem("members", JSON.stringify(paresedMembers));
+      }
+    }
 
-  //   for (const key in parsedLocalSaved) {
-  //     if (parsedLocalSaved[key].phone_number === personalData.phone_number) {
-  //       parsedLocalSaved[key] = personalData;
+    for (const key in parsedLocalSaved) {
+      if (
+        parsedLocalSaved[key].phone_number === personalData.phone_number &&
+        !paresedMembers["id"]
+      ) {
+        parsedLocalSaved[key] = personalData;
 
-  //       await AsyncStorage.setItem(
-  //         "MemberLocalAdd",
-  //         JSON.stringify(parsedLocalSaved),
-  //       );
-  //       return 1;
-  //     }
-  //   }
-  //   return 0;
-  // };
+        await AsyncStorage.setItem(
+          "MemberLocalAdd",
+          JSON.stringify(parsedLocalSaved),
+        );
+        return 1;
+      }
+    }
+    return 0;
+  };
 
   useEffect(() => {
     offlineData();
@@ -237,9 +242,18 @@ const ManageMembers = () => {
       const res = await ApiClient.get("admin/members", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      await AsyncStorage.setItem("members", JSON.stringify(res.data.members));
-      setMembersData(res.data.members);
-      search(filterSelections[0], true, res.data.members);
+      const Members = res.data.members;
+
+      const MemberLocalAdd = await AsyncStorage.getItem("MemberLocalAdd");
+      const parsedMemberLocalAdd = JSON.parse(MemberLocalAdd);
+
+      for (const locMember of parsedMemberLocalAdd) {
+        Members.push(locMember);
+      }
+
+      await AsyncStorage.setItem("members", JSON.stringify(Members));
+      setMembersData(Members);
+      search(filterSelections[0], true, Members);
     } catch (err) {
       console.log(err);
       if (axios.isAxiosError(err)) {
@@ -276,19 +290,14 @@ const ManageMembers = () => {
     }
   };
 
-  const formatDate = (createdAt) => {
-    const date = new Date(createdAt);
-
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-
-    return `${day}-${month}-${year}`;
-  };
-
-  const search = (filterDataBy, isAscending, Datas = null, searchText = "") => {
+  const search = async (
+    filterDataBy,
+    isAscending,
+    Datas = null,
+    searchText = "",
+  ) => {
     const filterMap = {
-      Date: "createdAt",
+      Date: "registration_Date",
       Id: "id",
       Name: "full_name",
       Status: "activity_status",
@@ -316,15 +325,13 @@ const ManageMembers = () => {
           }
 
           if (filterDataBy === "Date") {
-            const formattedDate = formatDate(value);
-            return formattedDate.includes(lowerSearch);
+            return value.includes(lowerSearch);
           }
 
           return false;
         }
       });
     }
-
     const sorted = [...data].sort((a, b) => {
       const modifier = isAscending ? 1 : -1;
 
@@ -335,9 +342,17 @@ const ManageMembers = () => {
       if (["Id", "Phone Number"].includes(filterDataBy)) {
         return (a[filterBy] - b[filterBy]) * modifier;
       }
-
-      return a[filterBy].localeCompare(b[filterBy]) * modifier;
+      if (a[filterBy] && b[filterBy]) {
+        return a[filterBy].localeCompare(b[filterBy]) * modifier;
+      }
     });
+
+    for (const member of sorted) {
+      if (typeof member?.image !== "object" && member.image) {
+        const im = await saveImage(member?.image);
+        member["image"] = im;
+      }
+    }
 
     setFilteredMembersData(sorted);
   };
@@ -375,73 +390,77 @@ const ManageMembers = () => {
           </View>
           <ScrollView className="bg-[#25252A]/60 mb-6 flex-1 mx-2 rounded-xl">
             {Array.isArray(filteredMembersData) &&
-              filteredMembersData.map((item, index) => (
-                <View
-                  key={index}
-                  className={`${item.createdAt ? "bg-white/10" : "bg-gray-600"} h-16 w-full flex flex-row items-center my-1 justify-between`}
-                >
-                  <View className="flex flex-row items-center gap-2">
-                    <View className="flex w-14 h-full items-center">
-                      <View
-                        className={`${item.activity_status === "Active" ? "bg-green-800" : item.activity_status === "Payment Due" ? "bg-red-600" : "bg-gray-500"} h-2 w-14`}
-                      />
-                      <Image
-                        source={
-                          item.image
-                            ? typeof item.image === "object"
-                              ? { uri: item.image.uri }
-                              : { uri: `${ADDRESS}/${item.image}` }
-                            : profile
-                        }
-                        resizeMode="contain"
-                        className="h-[49px] w-[49px] rounded-full p-2 border-[1px] border-[#00FF00]"
-                      />
+              filteredMembersData.map((item, index) => {
+                return (
+                  <View
+                    key={index}
+                    className={`${item.createdAt ? "bg-white/10" : "bg-gray-600"} h-16 w-full flex flex-row items-center my-1 justify-between`}
+                  >
+                    <View className="flex flex-row items-center gap-2">
+                      <View className="flex w-14 h-full items-center">
+                        <View
+                          className={`${item.activity_status === "Active" ? "bg-green-800" : item.activity_status === "Payment Due" ? "bg-red-600" : "bg-gray-500"} h-2 w-14`}
+                        />
+                        <Image
+                          source={
+                            item.image !== ""
+                              ? typeof item.image === "object"
+                                ? { uri: item.image?.uri }
+                                : item.image.includes("file://")
+                                  ? { uri: item.image }
+                                  : { uri: `${ADDRESS}/${item.image}` }
+                              : profile
+                          }
+                          resizeMode="contain"
+                          className="h-[49px] w-[49px] rounded-full p-2 border-[1px] border-[#00FF00]"
+                        />
+                      </View>
+                      <View className="w-[80px]">
+                        <Text className="text-black leading-none text-[18px] font-jura text-start w-44 h-6">
+                          {item.full_name}
+                        </Text>
+                        <Text className="text-black leading-none text-[17px] font-jura text-start">
+                          {item.membership
+                            ? item.membership.membershipPlan
+                              ? item.membership.membershipPlan.membership_name
+                              : t("manageMember.None")
+                            : t("manageMember.None")}
+                        </Text>
+                      </View>
+                      <View className="h-full flex justify-center gap-4 pb-2">
+                        <View className="h-[5px] w-[5px] bg-black rounded-full" />
+                        <View className="h-[5px] w-[5px] bg-black rounded-full" />
+                      </View>
+                      <View className="w-[150px]">
+                        <Text className="text-black leading-none text-[18px] font-jura text-start">
+                          {item.registration_Date}
+                        </Text>
+                        <Text className="text-black leading-none text-[18px] font-jura text-start">
+                          {item.id}-{item.phone_number}
+                        </Text>
+                      </View>
                     </View>
-                    <View className="w-[80px]">
-                      <Text className="text-black leading-none text-[18px] font-jura text-start w-44 h-6">
-                        {item.full_name}
-                      </Text>
-                      <Text className="text-black leading-none text-[17px] font-jura text-start">
-                        {item.membership
-                          ? item.membership.membershipPlan
-                            ? item.membership.membershipPlan.membership_name
-                            : t("manageMember.None")
-                          : t("manageMember.None")}
-                      </Text>
-                    </View>
-                    <View className="h-full flex justify-center gap-4 pb-2">
-                      <View className="h-[5px] w-[5px] bg-black rounded-full" />
-                      <View className="h-[5px] w-[5px] bg-black rounded-full" />
-                    </View>
-                    <View className="w-[150px]">
-                      <Text className="text-black leading-none text-[18px] font-jura text-start">
-                        {item.registration_Date}
-                      </Text>
-                      <Text className="text-black leading-none text-[18px] font-jura text-start">
-                        {item.id}-{item.phone_number}
-                      </Text>
-                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      className="mx-3"
+                      onPress={() => setAddMember(item)}
+                    >
+                      <Image source={edit} className="h-8 w-7" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      className="mx-3"
+                      onPress={() =>
+                        item?.id
+                          ? setConfirm(item.id)
+                          : setConfirm([item.phone_number, true])
+                      }
+                    >
+                      <Image source={remove} className="h-8 w-7" />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    className="mx-3"
-                    onPress={() => setAddMember(item)}
-                  >
-                    <Image source={edit} className="h-8 w-7" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    className="mx-3"
-                    onPress={() =>
-                      item?.id
-                        ? setConfirm(item.id)
-                        : setConfirm([item.phone_number, true])
-                    }
-                  >
-                    <Image source={remove} className="h-8 w-7" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                );
+              })}
           </ScrollView>
           {confirm && (
             <Confirmation

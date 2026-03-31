@@ -14,10 +14,15 @@ const Thumbnail = ({ videoUri }) => {
         return;
       }
       const newVideoUri = videoUri;
-      const { uri } = await VideoThumbnails.getThumbnailAsync(newVideoUri, {
-        time: 500,
-      });
-      setThumbnail(uri);
+      try {
+        const { uri } = await VideoThumbnails.getThumbnailAsync(newVideoUri, {
+          time: 500,
+        });
+        setThumbnail(uri);
+      } catch (err) {
+        console.log(err);
+        setThumbnail(null);
+      }
     };
   } catch {
     setThumbnail(null);
