@@ -99,11 +99,11 @@ const ManageMembers = () => {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
-        const offlineSave = await updateLocal(personalData);
-        if (offlineSave) {
-          setAddMember(false);
-          offlineData();
-        }
+        // const offlineSave = await updateLocal(personalData);
+        // if (offlineSave) {
+        //   setAddMember(false);
+        //   offlineData();
+        // }
         setErrorMessage(backendError?.error?.message);
         console.log(err.response?.status);
         setLoading(false);
@@ -156,35 +156,35 @@ const ManageMembers = () => {
     return 1;
   };
 
-  const updateLocal = async (personalData) => {
-    const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
-    const parsedLocalSaved = JSON.parse(localSaved);
+  // const updateLocal = async (personalData) => {
+  //   const localSaved = await AsyncStorage.getItem("MemberLocalAdd");
+  //   const parsedLocalSaved = JSON.parse(localSaved);
 
-    const members = await AsyncStorage.getItem("members");
-    const paresedMembers = JSON.parse(members);
+  //   const members = await AsyncStorage.getItem("members");
+  //   const paresedMembers = JSON.parse(members);
 
-    for (const key in paresedMembers) {
-      if (paresedMembers[key].phone_number === personalData.phone_number) {
-        paresedMembers[key] = personalData;
+  //   for (const key in paresedMembers) {
+  //     if (paresedMembers[key].phone_number === personalData.phone_number) {
+  //       paresedMembers[key] = personalData;
 
-        await AsyncStorage.setItem("members", JSON.stringify(paresedMembers));
-        return 1;
-      }
-    }
+  //       await AsyncStorage.setItem("members", JSON.stringify(paresedMembers));
+  //       return 1;
+  //     }
+  //   }
 
-    for (const key in parsedLocalSaved) {
-      if (parsedLocalSaved[key].phone_number === personalData.phone_number) {
-        parsedLocalSaved[key] = personalData;
+  //   for (const key in parsedLocalSaved) {
+  //     if (parsedLocalSaved[key].phone_number === personalData.phone_number) {
+  //       parsedLocalSaved[key] = personalData;
 
-        await AsyncStorage.setItem(
-          "MemberLocalAdd",
-          JSON.stringify(parsedLocalSaved),
-        );
-        return 1;
-      }
-    }
-    return 0;
-  };
+  //       await AsyncStorage.setItem(
+  //         "MemberLocalAdd",
+  //         JSON.stringify(parsedLocalSaved),
+  //       );
+  //       return 1;
+  //     }
+  //   }
+  //   return 0;
+  // };
 
   useEffect(() => {
     offlineData();
@@ -397,7 +397,7 @@ const ManageMembers = () => {
                         className="h-[49px] w-[49px] rounded-full p-2 border-[1px] border-[#00FF00]"
                       />
                     </View>
-                    <View className="w-[100px]">
+                    <View className="w-[80px]">
                       <Text className="text-black leading-none text-[18px] font-jura text-start w-44 h-6">
                         {item.full_name}
                       </Text>
@@ -413,7 +413,7 @@ const ManageMembers = () => {
                       <View className="h-[5px] w-[5px] bg-black rounded-full" />
                       <View className="h-[5px] w-[5px] bg-black rounded-full" />
                     </View>
-                    <View>
+                    <View className="w-[150px]">
                       <Text className="text-black leading-none text-[18px] font-jura text-start">
                         {item.registration_Date}
                       </Text>

@@ -28,7 +28,7 @@ const memberData = [
 
 export async function signUp(req, res) {
   const userType = req.params.userType;
-  const userData = JSON.parse(req.body.metadata);
+  const userData = req.body.metadata ? JSON.parse(req.body.metadata) : req.body;
 
   if (req.imageFile) {
     userData.image = req.imageFile;
