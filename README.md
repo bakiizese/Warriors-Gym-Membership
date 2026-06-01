@@ -145,6 +145,7 @@ npm start
 
 ## Preview
 
+### Admin
 | Admin Dashboard | Mobile Home |
 |----------------|------------|
 <img width="1080" height="2340" alt="Screenshot_20260601_082250_Warriors-Admin" src="https://github.com/user-attachments/assets/76237eb8-0ec1-4e3e-9547-3a80e5e9f52a" />
@@ -152,6 +153,7 @@ npm start
 <img width="1080" height="2340" alt="Screenshot_20260601_082309_Warriors-Admin" src="https://github.com/user-attachments/assets/3fb8779b-656b-4c4d-90e6-96e8a74c8b47" />
 
 
+### Member
 | Member Management | Payments |
 |------------------|----------|
 <img width="1080" height="2340" alt="Screenshot_20260601_082406_Warriors" src="https://github.com/user-attachments/assets/9725f388-a800-4cdf-8b23-e5e3a97129ab" />
