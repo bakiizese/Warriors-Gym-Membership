@@ -25,7 +25,7 @@ ENV VITE_ADDRESS=${VITE_ADDRESS}
 RUN npm run build
 
 # --- runtime ----------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
