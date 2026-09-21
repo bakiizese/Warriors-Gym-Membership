@@ -36,7 +36,7 @@ openssl rand -hex 24
 4. Note the service's real address. It is `https://warriors-gym-api.onrender.com` if that name was free, otherwise Render adds a suffix.
 5. **Settings > Deploy Hook**: copy the URL. Treat it as a secret.
 
-If Render asks for a payment method to create a Blueprint and you would rather not add one, create the service by hand instead: **New > Web Service**, Docker, root directory `backend`, plan Free, health check path `/ping`, auto-deploy off, and copy the environment variables from `render.yaml`.
+If Render asks for a payment method to create a Blueprint and you would rather not add one, create the service by hand instead: **New > Web Service**, Docker, leave the root directory empty, set the Dockerfile path to `./backend/Dockerfile` and the Docker context to `./backend`, plan Free, health check path `/ping`, auto-deploy off, and copy the environment variables from `render.yaml`.
 
 ## 4. Cloudflare: the token
 
