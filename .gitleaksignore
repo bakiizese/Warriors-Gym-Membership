@@ -1,0 +1,23 @@
+# Findings that were already in the git history before secret scanning was added.
+# History was not rewritten, so these stay in old commits; listing them lets a
+# full-history scan pass while every new commit is still checked.
+#
+# backend/request.rest: sample JWTs from an earlier, since-removed version.
+# backend/.env: an old development .env that was committed by mistake. The keys
+# in it (JWT secret, Chapa sandbox key) must be treated as public and rotated.
+# backend/tests/globalSetup.js: a made-up test secret (now marked gitleaks:allow).
+
+682207de11b0c0e5a28f1203ce7e202b9c87c4c4:backend/request.rest:jwt:49
+682207de11b0c0e5a28f1203ce7e202b9c87c4c4:backend/request.rest:jwt:58
+f5e5bbfbd339d7aa7a57f8770ba14c0fe89aeb3f:backend/request.rest:jwt:31
+f5e5bbfbd339d7aa7a57f8770ba14c0fe89aeb3f:backend/request.rest:jwt:44
+f5e5bbfbd339d7aa7a57f8770ba14c0fe89aeb3f:backend/request.rest:jwt:68
+f5e5bbfbd339d7aa7a57f8770ba14c0fe89aeb3f:backend/request.rest:jwt:120
+f5e5bbfbd339d7aa7a57f8770ba14c0fe89aeb3f:backend/request.rest:jwt:125
+84125e76a9b85a81b10e8465c28a2d343ede314a:backend/request.rest:jwt:103
+e1eeebd52db01a150e91bbd4366f1506a066a9ee:backend/request.rest:jwt:30
+e1eeebd52db01a150e91bbd4366f1506a066a9ee:backend/request.rest:jwt:51
+e1eeebd52db01a150e91bbd4366f1506a066a9ee:backend/request.rest:jwt:103
+e1eeebd52db01a150e91bbd4366f1506a066a9ee:backend/request.rest:jwt:109
+843c09cd29c70a4956bb9445536083a06da2b1a6:backend/.env:generic-api-key:1
+4f6b7546a27d99e45453fd632b4383f4e239cf63:backend/tests/globalSetup.js:generic-api-key:31

@@ -1,5 +1,9 @@
 # Warriors Gym Membership System
 
+[![CI](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/ci.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/codeql.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/codeql.yml)
+[![Secret scan](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/secrets.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/secrets.yml)
+
 ## Overview
 
 Warriors Gym Membership System is a comprehensive gym management platform designed to streamline membership management, user engagement, and administrative operations. The project consists of a backend service, an administrative web application, and a mobile application for gym members.

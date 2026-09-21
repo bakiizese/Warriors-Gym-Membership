@@ -32,7 +32,7 @@ export async function setup() {
   process.env.NODE_ENV = "test";
   process.env.DATABASE_URL = databaseUrl;
   process.env.DATABASE_SCHEMA = schema;
-  process.env.JWT_SECRET_KEY = "test-secret-key-that-is-long-enough-0123456789";
+  process.env.JWT_SECRET_KEY = "test-secret-key-that-is-long-enough-0123456789"; // gitleaks:allow
   process.env.ADMIN_INVITE_CODE = "test-invite-code";
   // Uploads (and the demo reset, which wipes them) never touch backend/uploads.
   process.env.UPLOADS_DIR = uploadsDir;

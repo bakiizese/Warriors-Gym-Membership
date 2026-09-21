@@ -6,9 +6,13 @@ import { env } from "./config/env.js";
 import { runMigrations } from "./config/migrator.js";
 import { uploadsRoot } from "./services/files.js";
 import { seedDemoData } from "./services/seed.js";
+import { retry } from "./utils/retry.js";
 
 async function start() {
-  await sequelize.authenticate();
+  await retry(() => sequelize.authenticate(), {
+    onRetry: (err, attempt, attempts) =>
+      console.warn(`database not ready (${attempt}/${attempts}): ${err.message}`),
+  });
   console.log("postgresql connected...");
 
   if (env.AUTO_MIGRATE) {

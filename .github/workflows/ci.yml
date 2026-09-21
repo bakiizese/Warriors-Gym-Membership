@@ -1,0 +1,225 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Work out which parts of the monorepo a change touches, so a docs-only or
+  # web-only PR does not pay for the backend and mobile jobs.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      admin-mobile: ${{ steps.filter.outputs.admin-mobile }}
+      member-mobile: ${{ steps.filter.outputs.member-mobile }}
+      stack: ${{ steps.filter.outputs.stack }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'admin-frontend/web/**'
+              - '.github/workflows/ci.yml'
+            admin-mobile:
+              - 'admin-frontend/mobile/**'
+              - '.github/workflows/ci.yml'
+            member-mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
+            stack:
+              - 'backend/**'
+              - 'admin-frontend/web/**'
+              - 'docker-compose*.yml'
+              - 'Makefile'
+              - '.github/workflows/ci.yml'
+
+  backend:
+    name: Backend (lint, tests)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postname
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postname -d postdb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The tests create and drop their own schema inside this database.
+      TEST_DATABASE_URL: postgres://postname:password@localhost:5432/postdb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  backend-image:
+    name: Backend image (build, scan)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: backend
+          load: true
+          tags: warriors-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      # Fails the build on fixable HIGH/CRITICAL findings in the OS packages or
+      # in the app's dependencies. Findings with no upstream fix are ignored.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: warriors-backend:ci
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
+  web:
+    name: Admin web (lint, build)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: admin-frontend/web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: admin-frontend/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  # Both Expo apps. `tsc` is enforced. Lint reports but does not block yet: the
+  # apps still have real errors (for example an undefined `setShowThumbnail` in
+  # admin ManageWorkoutDetail) that are fixed in the mobile phase, which then
+  # removes `continue-on-error`.
+  admin-mobile:
+    name: Admin mobile (types, lint)
+    needs: changes
+    if: needs.changes.outputs.admin-mobile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: admin-frontend/mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: admin-frontend/mobile/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+        continue-on-error: true
+
+  member-mobile:
+    name: Member mobile (types, lint)
+    needs: changes
+    if: needs.changes.outputs.member-mobile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+        continue-on-error: true
+
+  # Builds the real images and starts the whole stack the way `make up` does,
+  # then checks the API and the web admin actually answer.
+  stack:
+    name: Docker stack (smoke test)
+    needs: changes
+    if: needs.changes.outputs.stack == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Start the stack
+        run: docker compose up --build -d --wait --wait-timeout 240
+      - name: Check the API and the web admin
+        run: |
+          curl --fail --silent --show-error http://localhost:5000/health
+          echo
+          curl --fail --silent --show-error http://localhost:5000/docs/ > /dev/null
+          curl --fail --silent --show-error http://localhost:8080/ | grep -q '<div id="root">'
+          curl --fail --silent --show-error http://localhost:8080/config.js | grep -q 'localhost:5000'
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
+
+  # The one check to require in branch protection. Skipped jobs (nothing changed
+  # in that area) count as passing, so PRs never wait on a check that will not run.
+  ci:
+    name: CI
+    if: always()
+    needs: [changes, backend, backend-image, web, admin-mobile, member-mobile, stack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any job failed or was cancelled
+        run: |
+          echo '${{ toJSON(needs) }}'
+          test "${{ contains(needs.*.result, 'failure') }}" = "false"
+          test "${{ contains(needs.*.result, 'cancelled') }}" = "false"

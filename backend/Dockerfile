@@ -39,6 +39,13 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
+# Pick up OS fixes released after the base image was built, and drop npm: the app
+# starts with plain `node`, and npm's bundled packages only add scanner findings.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+        /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json app.js server.js ./
 COPY --chown=node:node config ./config
