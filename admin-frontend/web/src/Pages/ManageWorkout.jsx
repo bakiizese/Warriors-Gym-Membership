@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AppGradient from "../Component/AppGradient";
 
 import chestWorkout from "../../src/assets/images/workoutBgImages/Chest.jpeg";

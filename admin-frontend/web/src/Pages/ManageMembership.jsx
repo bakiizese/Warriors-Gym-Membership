@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import AppGradient from "../Component/AppGradient";
-import { useNavigate } from "react-router-dom";
 import Add from "../Component/AddMembership";
 import ApiClient from "../utils/ApiClient";
 import Confirmation from "../Component/Confirmation";
 
 const ManageMembershipPlans = () => {
-  const navigate = useNavigate();
-
   const [updateMembership, setUpdateMembership] = useState(false);
   const [membershipData, setMembershipData] = useState([]);
   const [reloadFetch, setReloadFetch] = useState(false);
@@ -16,7 +13,13 @@ const ManageMembershipPlans = () => {
   const [selectedMembership, setSelectedMembership] = useState(null);
   const [confirm, setConfirm] = useState(false);
 
+  const offlineData = () => {
+    const membershipPlan = localStorage.getItem("membershipPlan");
+    if (membershipPlan) setMembershipData(JSON.parse(membershipPlan));
+  };
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: show the cached copy from localStorage at once, then refresh from the API
     offlineData();
 
     const fetchMembership = async () => {
@@ -39,25 +42,19 @@ const ManageMembershipPlans = () => {
     fetchMembership();
   }, [reloadFetch]);
 
-  const offlineData = () => {
-    const membershipPlan = localStorage.getItem("membershipPlan");
-    if (membershipPlan) setMembershipData(JSON.parse(membershipPlan));
-  };
-
   const save = async (saveData, membershipId = null) => {
     const token = localStorage.getItem("adminToken");
     try {
-      const res = membershipId
-        ? await ApiClient.put(
-            `/admin/membership_plan/${membershipId}`,
-            saveData,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          )
-        : await ApiClient.post("/admin/membership_plan", saveData, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      if (membershipId) {
+        await ApiClient.put(
+          `/admin/membership_plan/${membershipId}`,
+          saveData,
+          config,
+        );
+      } else {
+        await ApiClient.post("/admin/membership_plan", saveData, config);
+      }
 
       setLoading(false);
       setUpdateMembership(false);

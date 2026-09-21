@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import AppGradient from "../Component/AppGradient";
-import { useNavigate } from "react-router-dom";
 import SearchAndFilter from "../Component/SearchAndFilter";
 import ApiClient from "../utils/ApiClient";
 import AddTransaction from "../Component/AddTransaction";
@@ -20,53 +19,6 @@ const ManagePayments = () => {
     "Plan",
     "Method",
   ];
-
-  useEffect(() => {
-    offlineData();
-    fetchTransactions();
-  }, []);
-
-  const offlineData = () => {
-    const transactions = localStorage.getItem("transactions");
-    if (transactions) {
-      setTransactionHistory(JSON.parse(transactions));
-      search(filterSelections[0], true, JSON.parse(transactions));
-    }
-  };
-
-  const fetchTransactions = async () => {
-    const token = localStorage.getItem("adminToken");
-    try {
-      const res = await ApiClient.get("/admin/transactions", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      localStorage.setItem(
-        "transactions",
-        JSON.stringify(res.data.transactions),
-      );
-      setTransactionHistory(res.data.transactions);
-      search(filterSelections[0], true, res.data.transactions);
-    } catch (err) {
-      console.log(err);
-      setErrorMessage("Failed to fetch transactions");
-    }
-  };
-
-  const saveTransaction = async (saveData) => {
-    const token = localStorage.getItem("adminToken");
-    try {
-      await ApiClient.post("/admin/transaction", saveData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchTransactions();
-      setAddPayment(false);
-      setLoading(false);
-    } catch (err) {
-      console.log(err);
-      setErrorMessage("Failed to save transaction");
-      setLoading(false);
-    }
-  };
 
   const formatDate = (createdAt) => {
     const date = new Date(createdAt);
@@ -133,6 +85,54 @@ const ManagePayments = () => {
     });
 
     setFilteredTransactionData(sorted);
+  };
+
+  const offlineData = () => {
+    const transactions = localStorage.getItem("transactions");
+    if (transactions) {
+      setTransactionHistory(JSON.parse(transactions));
+      search(filterSelections[0], true, JSON.parse(transactions));
+    }
+  };
+
+  const fetchTransactions = async () => {
+    const token = localStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("/admin/transactions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.setItem(
+        "transactions",
+        JSON.stringify(res.data.transactions),
+      );
+      setTransactionHistory(res.data.transactions);
+      search(filterSelections[0], true, res.data.transactions);
+    } catch (err) {
+      console.log(err);
+      setErrorMessage("Failed to fetch transactions");
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: show the cached copy from localStorage at once, then refresh from the API
+    offlineData();
+    fetchTransactions();
+  }, []);
+
+  const saveTransaction = async (saveData) => {
+    const token = localStorage.getItem("adminToken");
+    try {
+      await ApiClient.post("/admin/transaction", saveData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchTransactions();
+      setAddPayment(false);
+      setLoading(false);
+    } catch (err) {
+      console.log(err);
+      setErrorMessage("Failed to save transaction");
+      setLoading(false);
+    }
   };
 
   return (

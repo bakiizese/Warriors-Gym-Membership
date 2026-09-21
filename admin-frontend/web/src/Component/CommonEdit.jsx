@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import remove from "../assets/icons/remove.png";
 
 const CommonEdit = ({
