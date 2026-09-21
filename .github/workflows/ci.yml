@@ -28,6 +28,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       admin-mobile: ${{ steps.filter.outputs.admin-mobile }}
       member-mobile: ${{ steps.filter.outputs.member-mobile }}
+      landing: ${{ steps.filter.outputs.landing }}
       stack: ${{ steps.filter.outputs.stack }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,11 +48,15 @@ jobs:
             member-mobile:
               - 'mobile/**'
               - '.github/workflows/ci.yml'
+            landing:
+              - 'landing/**'
+              - '.github/workflows/ci.yml'
             stack:
               - 'backend/**'
               - 'admin-frontend/web/**'
               - 'admin-frontend/mobile/**'
               - 'mobile/**'
+              - 'landing/**'
               - 'docker-compose*.yml'
               - 'Makefile'
               - '.github/workflows/ci.yml'
@@ -139,6 +144,27 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+  landing:
+    name: Landing page (lint, types, build)
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      # Type checks, then builds.
+      - run: npm run build
+
   # Both Expo apps: type check, lint (errors block, warnings do not) and a web
   # export, which is what the hosted demo serves.
   admin-mobile:
@@ -214,7 +240,11 @@ jobs:
           # and the API accepts calls from their origins.
           curl --fail --silent --show-error http://localhost:8081/AuthPage | grep -q 'Warriors Gym - Admin'
           curl --fail --silent --show-error http://localhost:8082/AuthPage | grep -q 'Warriors Gym - Member'
-          for origin in 8080 8081 8082; do
+          # The landing page: served, configured, and locked down by its policy.
+          curl --fail --silent --show-error http://localhost:8090/ | grep -q '<div id="root">'
+          curl --fail --silent --show-error http://localhost:8090/config.js | grep -q 'MEMBER_MOBILE_URL: "http://localhost:8082"'
+          curl --silent --head http://localhost:8090/ | grep -qi "content-security-policy: .*frame-src http://localhost:8081 http://localhost:8082"
+          for origin in 8080 8081 8082 8090; do
             curl --silent --head -H "Origin: http://localhost:$origin" http://localhost:5000/health \
               | grep -qi "access-control-allow-origin: http://localhost:$origin"
           done
@@ -230,7 +260,7 @@ jobs:
   ci:
     name: CI
     if: always()
-    needs: [changes, backend, backend-image, web, admin-mobile, member-mobile, stack]
+    needs: [changes, backend, backend-image, web, landing, admin-mobile, member-mobile, stack]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
