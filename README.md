@@ -84,36 +84,41 @@ Features may include:
 
 ## Getting Started
 
-### Clone the Repository
+### Run everything with Docker (recommended)
+
+You need Docker with the Compose plugin. One command starts PostgreSQL, the API and the admin web app, with sample data and demo logins already loaded.
 
 ```bash
-git clone https://github.com/your-username/Warriors-Gym-Membership.git
+git clone https://github.com/bakiizese/Warriors-Gym-Membership.git
 cd Warriors-Gym-Membership
+make up            # or: docker compose up --build -d
 ```
 
-### Backend Setup
+| What | Where |
+| --- | --- |
+| Admin web app | http://localhost:8080 |
+| API docs (Swagger UI) | http://localhost:5000/docs |
+| Demo admin login | `0900000001` / `demo1234` |
+| Demo member login | `0911000001` / `demo1234` |
 
-```bash
-cd backend
-npm install
-npm start
-```
+Common commands (run `make help` for all of them):
 
-### Admin Frontend Setup
+| Command | What it does |
+| --- | --- |
+| `make dev` | Hot reload for the API (nodemon) and web admin (Vite, http://localhost:5173) |
+| `make test` | Run the backend test suite in a container |
+| `make reseed` | Wipe the database and reload the sample data |
+| `make down` / `make clean` | Stop the stack / stop it and delete its data |
 
-```bash
-cd admin-frontend
-npm install
-npm start
-```
+Ports, the database password and the JWT secret can be overridden with a `.env` file; copy [.env.example](.env.example).
 
-### Mobile Application Setup
+### Run without Docker
 
-```bash
-cd mobile
-npm install
-npm start
-```
+- **Backend:** see [backend/README.md](backend/README.md) (Node 20+, PostgreSQL).
+- **Admin web:** `cd admin-frontend/web && cp .env.example .env && npm ci && npm run dev`
+- **Mobile apps** (`admin-frontend/mobile` for admins, `mobile` for members): `cp .env.example .env`, set `EXPO_PUBLIC_ADDRESS` to your machine's LAN IP (a phone cannot reach `localhost`), then `npm ci && npx expo start`.
+
+The mobile apps run on a device or emulator rather than in a container.
 
 ## System Architecture
 

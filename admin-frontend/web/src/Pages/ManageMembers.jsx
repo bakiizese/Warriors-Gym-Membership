@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ADDRESS } from "../utils/config";
 import axios from "axios";
 import remove from "../../src/assets/icons/delete.png";
 import profile from "../../src/assets/icons/profile.png";
@@ -17,7 +18,6 @@ const ManageMembers = () => {
   const filterSelections = ["Id", "Name", "Phone Number", "Date", "Status"];
   const [confirm, setConfirm] = useState(false);
 
-  const ADDRESS = import.meta.env.VITE_ADDRESS;
 
   const saveMember = async (personalData) => {
     setLoading(true);

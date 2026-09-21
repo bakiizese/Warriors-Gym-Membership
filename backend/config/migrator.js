@@ -20,7 +20,10 @@ export const migrator = new Umzug({
     },
   },
   context: sequelize.getQueryInterface(),
-  storage: new SequelizeStorage({ sequelize }),
+  // Without an explicit schema, Sequelize decides whether SequelizeMeta exists by
+  // looking only in `public`, so a SequelizeMeta there (from a normal dev run)
+  // makes it skip creating one in the schema DATABASE_SCHEMA points at.
+  storage: new SequelizeStorage({ sequelize, schema: env.DATABASE_SCHEMA }),
   logger: env.isTest ? undefined : console,
 });
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ADDRESS } from "../utils/config";
 import CommonEdit from "./CommonEdit";
 import edit from "../../src/assets/icons/edit.png";
 
@@ -12,7 +13,6 @@ const WorkoutCrud = ({
   workoutType,
   updateData = {},
 }) => {
-  const ADDRESS = import.meta.env.VITE_ADDRESS;
 
   const [workoutData, setWorkoutData] = useState({
     workout_title: updateData.workout_title || "",

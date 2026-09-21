@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { ADDRESS } from "../utils/config";
 
 const Thumbnail = ({ videoUrl }) => {
   const [thumbnail, setThumbnail] = useState(null);
-  const ADDRESS = import.meta.env.VITE_ADDRESS;
   useEffect(() => {
     if (!videoUrl) return;
     const createThumbnail = async () => {
