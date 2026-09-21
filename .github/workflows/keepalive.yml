@@ -1,0 +1,28 @@
+name: Keep the API awake
+
+# Render's free plan puts the API to sleep after 15 minutes without traffic and
+# needs about a minute to wake it. This pings it every 10 minutes so a visitor
+# rarely meets a cold start. It calls /ping, which never touches the database,
+# so Neon is free to sleep between real visits and its monthly hours last.
+#
+# Two limits worth knowing: GitHub runs scheduled workflows on a best-effort basis
+# (a ping can be late), and it turns them off after 60 days without a commit to
+# the repository. A new commit, or re-enabling it in the Actions tab, restarts it.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the API
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 10 "${API_URL%/}/ping"

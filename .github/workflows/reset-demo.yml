@@ -1,0 +1,36 @@
+name: Reset demo data
+
+# Puts the demo back the way it started, so whatever a visitor deleted or
+# changed yesterday is gone. Calls POST /demo/reset, which wipes and reseeds the
+# database and deletes uploaded files. It only exists when the API runs in demo
+# mode with a DEMO_RESET_TOKEN, and it needs the same token here.
+
+on:
+  schedule:
+    # Midnight in East Africa (UTC+3).
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reset:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The API is usually asleep by night. Wake it (and give it time) first, so
+      # the reset itself is not what has to survive a cold start.
+      - name: Wake the API
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: curl --fail --silent --show-error --max-time 180 --retry 3 --retry-delay 20 "${API_URL%/}/ping"
+
+      - name: Reset the demo data
+        env:
+          API_URL: ${{ vars.API_URL }}
+          TOKEN: ${{ secrets.DEMO_RESET_TOKEN }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 180 --retry 3 --retry-delay 30 \
+            -X POST -H "x-reset-token: $TOKEN" "${API_URL%/}/demo/reset"
+          echo

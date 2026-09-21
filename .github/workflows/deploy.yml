@@ -1,0 +1,197 @@
+name: Deploy
+
+# After CI passes on main: deploy the API to Render, wait until the new commit is
+# actually answering, then publish the four static sites to Cloudflare Pages.
+# Nothing happens until the DEPLOY_ENABLED repository variable is "true", so the
+# accounts can be set up first. Setup steps: docs/deploy.md.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # The project names below are the Cloudflare Pages sites. If you change the
+  # prefix, change it in render.yaml (CORS_ORIGINS) and docs/deploy.md too.
+  LANDING_URL: https://warriors-gym.pages.dev
+  ADMIN_WEB_URL: https://warriors-gym-admin-web.pages.dev
+  ADMIN_MOBILE_URL: https://warriors-gym-admin-mobile.pages.dev
+  MEMBER_MOBILE_URL: https://warriors-gym-member-mobile.pages.dev
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  api:
+    name: Deploy the API
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.API_URL }}
+    steps:
+      - name: Ask Render to deploy this commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          curl --fail --silent --show-error --max-time 60 -X POST "${HOOK}&ref=${SHA}" -o /dev/null
+          echo "Deploy requested for ${SHA:0:7}"
+
+      # Render keeps the old version serving until the new one is ready, so a
+      # plain "is it up" check proves nothing. /ping reports the running commit.
+      - name: Wait until that commit is answering
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          api="${API_URL%/}"
+          want="${SHA:0:7}"
+          for attempt in $(seq 1 80); do
+            body="$(curl --silent --max-time 30 "$api/ping" || true)"
+            if echo "$body" | grep -q "\"commit\":\"$want\""; then
+              echo "Live: $body"
+              exit 0
+            fi
+            echo "Attempt $attempt: ${body:-no answer yet}"
+            sleep 15
+          done
+          echo "::error::The API did not report commit $want within 20 minutes"
+          exit 1
+
+  pages:
+    name: Publish ${{ matrix.name }}
+    needs: api
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ env.LANDING_URL }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: landing page
+            dir: landing
+            project: warriors-gym
+            kind: landing
+            build: npm run build
+          - name: admin web
+            dir: admin-frontend/web
+            project: warriors-gym-admin-web
+            kind: admin-web
+            build: npm run build
+          - name: admin mobile
+            dir: admin-frontend/mobile
+            project: warriors-gym-admin-mobile
+            kind: mobile
+            build: npx expo export --platform web
+          - name: member mobile
+            dir: mobile
+            project: warriors-gym-member-mobile
+            kind: mobile
+            build: npx expo export --platform web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SHA }}
+
+      - name: Check the API address
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          case "$API_URL" in
+            https://*) ;;
+            *) echo "::error::API_URL must start with https://"; exit 1 ;;
+          esac
+          case "$API_URL" in
+            */) echo "::error::API_URL must not end with a slash"; exit 1 ;;
+          esac
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm ci
+
+      # The Android buttons on the landing page only appear once a release exists.
+      - name: Look for an Android release
+        id: apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            base="https://github.com/$GITHUB_REPOSITORY/releases/latest/download"
+            echo "admin=$base/warriors-admin.apk" >> "$GITHUB_OUTPUT"
+            echo "member=$base/warriors-member.apk" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Every app reads the address it needs and ignores the rest.
+      - name: Build
+        working-directory: ${{ matrix.dir }}
+        env:
+          CI: "1"
+          VITE_ADDRESS: ${{ vars.API_URL }}
+          EXPO_PUBLIC_ADDRESS: ${{ vars.API_URL }}
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_ADMIN_WEB_URL: ${{ env.ADMIN_WEB_URL }}
+          VITE_ADMIN_MOBILE_URL: ${{ env.ADMIN_MOBILE_URL }}
+          VITE_MEMBER_MOBILE_URL: ${{ env.MEMBER_MOBILE_URL }}
+          VITE_SITE_URL: ${{ env.LANDING_URL }}
+          VITE_GITHUB_URL: https://github.com/${{ github.repository }}
+          VITE_APK_ADMIN_URL: ${{ steps.apk.outputs.admin }}
+          VITE_APK_MEMBER_URL: ${{ steps.apk.outputs.member }}
+        run: ${{ matrix.build }}
+
+      - name: Add the Pages headers
+        env:
+          API_URL: ${{ vars.API_URL }}
+          ADMIN_MOBILE_URL: ${{ env.ADMIN_MOBILE_URL }}
+          MEMBER_MOBILE_URL: ${{ env.MEMBER_MOBILE_URL }}
+        run: sh .github/scripts/pages-headers.sh "${{ matrix.kind }}" "${{ matrix.dir }}/dist"
+
+      # Creating the project is a no-op when it exists; a real problem such as a
+      # bad token shows up in the deploy right after.
+      - name: Publish to Cloudflare Pages
+        working-directory: ${{ matrix.dir }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+          PROJECT: ${{ matrix.project }}
+        run: |
+          npx --yes wrangler@4.135.0 pages project create "$PROJECT" --production-branch main || echo "Project already exists, or creating it failed: the deploy below will say which."
+          npx --yes wrangler@4.135.0 pages deploy dist --project-name "$PROJECT" --branch main --commit-hash "$SHA" --commit-message "Deploy ${SHA:0:7}" --commit-dirty=true
+
+      - name: Check the site answers
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          url="https://$PROJECT.pages.dev/"
+          for _ in $(seq 1 12); do
+            if curl --fail --silent --max-time 20 -o /dev/null "$url"; then
+              echo "$url is live"
+              echo "Published $url" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$url did not answer"
+          exit 1
