@@ -13,14 +13,13 @@ import phone from "@/assets/icons/phone.png";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ActivityIndicator,
-  Image,
-  ImageBackground,
   Keyboard,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image, ImageBackground } from "../components/AppImage";
 import { useRouter } from "expo-router";
 
 export default function AuthPage() {

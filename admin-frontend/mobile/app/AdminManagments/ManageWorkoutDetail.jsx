@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../../utils/fileSystem";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -11,12 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Video } from "react-native-video";
+import Video from "../../components/VideoPlayer";
 import AppGradient from "../../components/AppGradient";
 import Confirmation from "../../components/Confirmation";
 import Thumbnail from "../../components/Thumbnail";
 import WorkoutCrud from "../../components/WorkoutCrud";
-import ApiClient from "../../utils/ApiClient";
+import ApiClient, { ApiClientFile } from "../../utils/ApiClient";
+import { toUploadFile } from "../../utils/uploadFile";
+import { isFullUri } from "../../utils/uri";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -55,14 +57,16 @@ const ManageWorkoutDetail = () => {
 
     const file = updateWorkoutData["workout_video"];
     delete updateWorkoutData.workout_video;
-    formData.append("file", file);
+    formData.append("file", await toUploadFile(file));
     formData.append("metadata", JSON.stringify(updateWorkoutData));
     try {
-      const res = await axios.put(`${ADDRESS}/admin/workoutUpdate`, formData, {
+      // No timeout: a workout video can take a while to upload.
+      const res = await ApiClientFile.put("/admin/workoutUpdate", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
+        timeout: 0,
       });
       setLoading(false);
       setModify(false);
@@ -116,15 +120,16 @@ const ManageWorkoutDetail = () => {
 
     const file = saveWorkoutData["workout_video"];
     delete saveWorkoutData.workout_video;
-    formData.append("file", file);
+    formData.append("file", await toUploadFile(file));
     formData.append("metadata", JSON.stringify(saveWorkoutData));
 
     try {
-      const res = await axios.post(`${ADDRESS}/admin/workout`, formData, {
+      const res = await ApiClientFile.post("/admin/workout", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
+        timeout: 0,
       });
       setLoading(false);
       setModify(false);
@@ -150,7 +155,6 @@ const ManageWorkoutDetail = () => {
   const deleteFile = async (uri) => {
     console.log("in delete");
     try {
-      setShowThumbnail(false);
       await FileSystem.deleteAsync(uri);
     } catch {
       console.log("alredy deleted");
@@ -188,7 +192,7 @@ const ManageWorkoutDetail = () => {
             <View className="flex-1">
               <View className="w-full h-[42%] p-2 px-1 border-b-[1px] border-black relative">
                 <View className="flex-1 bg-black rounded-2xl justify-center items-center ">
-                  {currentVideo?.video?.path.includes("file://") ? (
+                  {isFullUri(currentVideo?.video?.path) ? (
                     <>
                       <Video
                         source={{

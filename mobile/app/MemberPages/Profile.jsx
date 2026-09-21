@@ -2,12 +2,12 @@ import { Entypo, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "../../components/AppImage";
 import profile from "../..//assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import EditMember from "../../components/EditMember";
@@ -18,9 +18,11 @@ import AttendanceCalendar from "../../components/AttendanceCalendar";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import ApiClient, { ApiClientFile } from "../../utils/ApiClient";
+import { toUploadFile } from "../../utils/uploadFile";
+import { isFullUri } from "../../utils/uri";
 import Confirmation from "../../components/Confirmation";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../../utils/fileSystem";
 import AboutDeveloper from "../../components/AboutDeveloper";
 
 const Profile = () => {
@@ -123,7 +125,10 @@ const Profile = () => {
     setLoading(true);
     const token = await AsyncStorage.getItem("userToken");
     const formData = new FormData();
-    formData.append("file", profileData.image ? profileData.image : {});
+    formData.append(
+      "file",
+      await toUploadFile(profileData.image ? profileData.image : {}),
+    );
     formData.append("metadata", JSON.stringify(profileData));
     try {
       const res = await ApiClientFile.put(`/member/profile`, formData, {
@@ -245,7 +250,7 @@ const Profile = () => {
                     source={
                       profileData?.image
                         ? {
-                            uri: profileData?.image.includes("file://")
+                            uri: isFullUri(profileData?.image)
                               ? profileData?.image
                               : `${ADDRESS}/${profileData.image}`,
                           }

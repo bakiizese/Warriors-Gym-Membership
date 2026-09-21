@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "./AppImage";
 import dumbbell from "../assets/icons/dumbbell.png";
 import CommonEdit from "./CommonEdit";
 import { useTranslation } from "react-i18next";

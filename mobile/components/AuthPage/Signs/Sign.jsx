@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import {
   TextInput,
   View,
-  Image,
   Text,
   Keyboard,
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
+import { Image } from "../../AppImage";
 import phone from "@/assets/icons/phone.png";
 import key from "@/assets/icons/key.png";
 import hide_key from "@/assets/icons/hide_key.png";

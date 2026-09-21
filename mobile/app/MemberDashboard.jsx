@@ -4,8 +4,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
-  ImageBackground,
   RefreshControl,
   ScrollView,
   Text,
@@ -13,9 +11,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Image, ImageBackground } from "../components/AppImage";
 
 import axios from "axios";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../utils/fileSystem";
+import { isFullUri } from "../utils/uri";
 import { useTranslation } from "react-i18next";
 import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -43,7 +43,7 @@ export default function MemberDashboard() {
   const [lineSignal, setLineSignal] = useState("");
   const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;
   const [attendanceDays, setAttendanceDays] = useState([]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   let token;
   const nowTime = new Date();
   const [todayImage, setTodayImage] = useState(nowTime.getDate());
@@ -472,7 +472,7 @@ export default function MemberDashboard() {
                   source={
                     userData?.image
                       ? {
-                          uri: userData?.image.includes("file://")
+                          uri: isFullUri(userData?.image)
                             ? userData?.image
                             : null,
                         }
@@ -601,13 +601,18 @@ export default function MemberDashboard() {
                   </Text>
                   <View className="h-[4px] w-[4px] bg-white rounded-full" />
                   <Text className="text-white text-[16px] font-jura-bold leading-none">
-                    {Object.keys(membership).length > 0
-                      ? membership.membershipPlan?.duration_days / 30 +
-                        " " +
-                        t(
-                          `dashboard.${membership.membershipPlan?.membership_name}`,
-                        )
-                      : t("dashboard.None")}
+                    {Object.keys(membership).length === 0
+                      ? t("dashboard.None")
+                      : i18n.exists(
+                            `dashboard.${membership.membershipPlan?.membership_name}`,
+                          )
+                        ? membership.membershipPlan?.duration_days / 30 +
+                          " " +
+                          t(
+                            `dashboard.${membership.membershipPlan?.membership_name}`,
+                          )
+                        : // Plans the app has no translation for show their own name.
+                          membership.membershipPlan?.membership_name}
                   </Text>
                 </View>
                 <View className="flex flex-row items-end gap-2">

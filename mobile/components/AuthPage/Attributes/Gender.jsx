@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, View, Text, ImageBackground } from "react-native";
+import { TouchableOpacity, View, Text } from "react-native";
+import { ImageBackground } from "../../AppImage";
 import male from "@/assets/images/male.png";
 import female from "@/assets/images/female.png";
 import { useTranslation } from "react-i18next";

@@ -7,7 +7,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   RefreshControl,
   ScrollView,
   Text,
@@ -15,11 +14,14 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Image } from "../components/AppImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profile from "../assets/icons/profile.png";
 import AppGradient from "../components/AppGradient";
 import { Linking } from "react-native";
 import ApiClient, { ApiClientFile } from "../utils/ApiClient";
+import { toUploadFile } from "../utils/uploadFile";
+import { isFullUri } from "../utils/uri";
 import saveImage from "../utils/saveImage";
 import { useTranslation } from "react-i18next";
 import workoutM from "../assets/icons/workoutM.png";
@@ -94,7 +96,10 @@ const AdminDashboard = () => {
     setLoadings(true);
     const token = await AsyncStorage.getItem("adminToken");
     const formData = new FormData();
-    formData.append("file", profileData.image ? profileData.image : {});
+    formData.append(
+      "file",
+      await toUploadFile(profileData.image ? profileData.image : {}),
+    );
     formData.append("metadata", JSON.stringify(profileData));
     try {
       const res = await ApiClientFile.put(`/admin/profile`, formData, {
@@ -349,7 +354,10 @@ const AdminDashboard = () => {
   const saveMember = async (personalData) => {
     const token = await AsyncStorage.getItem("adminToken");
     const formData = new FormData();
-    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append(
+      "file",
+      await toUploadFile(personalData.image ? personalData.image : ""),
+    );
     formData.append("metadata", JSON.stringify(personalData));
     try {
       const res = await ApiClientFile.post(`/admin/addMember`, formData, {
@@ -618,7 +626,7 @@ const AdminDashboard = () => {
                   source={
                     adminData?.image
                       ? {
-                          uri: adminData?.image.includes("file://")
+                          uri: isFullUri(adminData?.image)
                             ? adminData?.image
                             : `${ADDRESS}/${adminData.image}`,
                         }

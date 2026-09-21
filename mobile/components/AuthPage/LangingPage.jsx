@@ -1,5 +1,6 @@
 import React from "react";
-import { ImageBackground, View, Text } from "react-native";
+import { View, Text } from "react-native";
+import { ImageBackground } from "../AppImage";
 import logo from "@/assets/images/logo.png";
 import { useTranslation } from "react-i18next";
 

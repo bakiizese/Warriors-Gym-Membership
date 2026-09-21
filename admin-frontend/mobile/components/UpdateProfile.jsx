@@ -7,12 +7,14 @@ import key from "@/assets/icons/key.png";
 import phone from "@/assets/icons/phone.png";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "./AppImage";
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import SelectLanguage from "./SelectLanguage";
 import CommonEdit from "./CommonEdit";
 import { useTranslation } from "react-i18next";
+import { isFullUri } from "../utils/uri";
 
 const UpdateProfile = ({
   type,
@@ -124,7 +126,7 @@ const UpdateProfile = ({
                 ? { uri: localImage }
                 : personalData?.image
                   ? {
-                      uri: personalData.image.includes("file://")
+                      uri: isFullUri(personalData.image)
                         ? personalData.image
                         : `${ADDRESS}/${personalData.image}`,
                     }

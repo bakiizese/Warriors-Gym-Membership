@@ -1,12 +1,12 @@
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "./AppImage";
 import remove from "../assets/icons/remove.png";
 import { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";

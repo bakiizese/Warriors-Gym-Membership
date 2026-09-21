@@ -159,7 +159,7 @@ const ManageMembershipPlans = () => {
                     />
                     <View className="flex h-full justify-evenly items-start">
                       <Text className="text-white leading-none text-[20px] font-jura text-center">
-                        {membershipItem.duration_days / 30}-
+                        {Number((membershipItem.duration_days / 30).toFixed(1))}-
                         {membershipItem.membership_name}
                       </Text>
                       <Text className="text-white leading-none text-[20px] font-jura text-center">
@@ -169,10 +169,10 @@ const ManageMembershipPlans = () => {
                         {t(`${`manageMembership.${membershipItem.plan_type}`}`)}
                       </Text>
                       <Text className="text-white leading-none text-[20px] font-jura text-center">
-                        ${membershipItem.fee}
+                        {membershipItem.fee} {t("managePayment.Birr")}
                       </Text>
                     </View>
-                    <View className="flex h-full justify-evenly items-start">
+                    <View className="flex flex-1 h-full justify-evenly items-start mx-2">
                       {membershipItem?.description?.split("\n").map((item) => (
                         <Text
                           key={item}

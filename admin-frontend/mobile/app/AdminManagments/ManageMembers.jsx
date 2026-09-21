@@ -4,19 +4,20 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Image,
   Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "../../components/AppImage";
 import remove from "../../assets/icons/delete.png";
 import profile from "../../assets/icons/profile.png";
 import AppGradient from "../../components/AppGradient";
 import MemberCrud from "../../components/MemberCrud";
 import SearchAndFilter from "../../components/SearchAndFilter";
 import ApiClient, { ApiClientFile } from "../../utils/ApiClient";
+import { toUploadFile } from "../../utils/uploadFile";
 import Confirmation from "../../components/Confirmation";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,7 +41,10 @@ const ManageMembers = () => {
     setLoading(true);
     const token = await AsyncStorage.getItem("adminToken");
     const formData = new FormData();
-    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append(
+      "file",
+      await toUploadFile(personalData.image ? personalData.image : ""),
+    );
     formData.append("metadata", JSON.stringify(personalData));
     try {
       const res = await ApiClientFile.post(`/admin/addMember`, formData, {
@@ -57,6 +61,13 @@ const ManageMembers = () => {
       if (axios.isAxiosError(err)) {
         const backendError = err.response?.data;
         console.log(backendError?.error);
+        if (err.response) {
+          // The server answered and refused (for example a duplicate phone
+          // number). Show why instead of queuing a record that can never sync.
+          setErrorMessage(backendError?.error);
+          setLoading(false);
+          return;
+        }
         const offlineSave = await saveLocal(personalData);
         console.log("-", offlineSave);
 
@@ -80,7 +91,10 @@ const ManageMembers = () => {
   const updateMember = async (personalData) => {
     setLoading(true);
     const formData = new FormData();
-    formData.append("file", personalData.image ? personalData.image : "");
+    formData.append(
+      "file",
+      await toUploadFile(personalData.image ? personalData.image : ""),
+    );
     formData.append("metadata", JSON.stringify(personalData));
     const token = await AsyncStorage.getItem("adminToken");
     try {
@@ -104,7 +118,7 @@ const ManageMembers = () => {
         //   setAddMember(false);
         //   offlineData();
         // }
-        setErrorMessage(backendError?.error?.message);
+        setErrorMessage(backendError?.error);
         console.log(err.response?.status);
         setLoading(false);
 

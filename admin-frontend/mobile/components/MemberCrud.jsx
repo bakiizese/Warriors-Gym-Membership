@@ -10,12 +10,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
-  Image,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "./AppImage";
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import CommonEdit from "./CommonEdit";
@@ -69,7 +70,41 @@ const MemberCrud = ({
     setErrorMessage("");
   }, []);
 
+  const pickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert("Permission to access photos is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const file = result.assets[0];
+
+      const imageReturn = {
+        uri: file.uri || "http//:",
+        name: file.fileName || "name",
+        type: file.mimeType || "image/jpeg",
+      };
+      setPersonalData((prev) => ({
+        ...prev,
+        image: imageReturn,
+      }));
+
+      setLocalImage(result.assets[0].uri);
+    }
+  };
+
   const pickImage = async () => {
+    // Alert.alert does nothing in a browser, so go straight to the file chooser.
+    if (Platform.OS === "web") return pickFromGallery();
+
     Alert.alert("Select Image", "Choose an option", [
       { text: "Cancel", style: "cancel" },
       {
@@ -103,40 +138,7 @@ const MemberCrud = ({
           }
         },
       },
-      {
-        text: "Gallery",
-        onPress: async () => {
-          const permission =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!permission.granted) {
-            alert("Permission to access photos is required!");
-            return;
-          }
-
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          });
-
-          if (!result.canceled) {
-            const file = result.assets[0];
-
-            const imageReturn = {
-              uri: file.uri || "http//:",
-              name: file.fileName || "name",
-              type: file.mimeType || "image/jpeg",
-            };
-            setPersonalData((prev) => ({
-              ...prev,
-              image: imageReturn,
-            }));
-
-            setLocalImage(result.assets[0].uri);
-          }
-        },
-      },
+      { text: "Gallery", onPress: pickFromGallery },
     ]);
   };
 
