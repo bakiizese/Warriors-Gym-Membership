@@ -1,129 +1,161 @@
 import express from "express";
 import Member from "../models/Member.js";
 import Admin from "../models/Admin.js";
+import { env } from "../config/env.js";
+import { HttpError } from "../middleware/errors.js";
 import { hash_password, verify_password } from "../utils/password.js";
+import { safeEqual } from "../utils/safeEqual.js";
 import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
 
 const authRouter = express.Router();
 
 const classes = { member: Member, admin: Admin };
-const adminData = [
-  "full_name",
-  "phone_number",
-  "password",
-  "language",
-  "admin_level",
-];
-const memberData = [
-  "full_name",
-  "phone_number",
-  "gender",
-  "height",
-  "weight",
-  "age",
-  "password",
-  "language",
-  "registration_Date",
-];
 
-export async function signUp(req, res) {
-  const userType = req.params.userType;
-  const userData = req.body.metadata ? JSON.parse(req.body.metadata) : req.body;
+const requiredFields = {
+  admin: ["full_name", "phone_number", "password", "language", "admin_level"],
+  member: [
+    "full_name",
+    "phone_number",
+    "gender",
+    "height",
+    "weight",
+    "age",
+    "password",
+    "language",
+    "registration_Date",
+  ],
+};
+// Only these can be set through sign-up; everything else in the body is ignored.
+const optionalFields = { admin: [], member: [] };
+const numericFields = ["height", "weight", "age"];
+const MIN_PASSWORD_LENGTH = 6;
 
+function getModel(userType) {
+  if (!Object.hasOwn(classes, userType)) {
+    throw new HttpError(404, "unknown user type");
+  }
+  return classes[userType];
+}
+
+function parseBody(req) {
+  if (!req.body?.metadata) return req.body ?? {};
+  try {
+    return JSON.parse(req.body.metadata);
+  } catch {
+    throw new HttpError(400, "metadata is not valid JSON");
+  }
+}
+
+// `userType` is explicit so the admin "add member" route can reuse this for
+// members without touching req.params.
+export async function signUp(req, res, userType = req.params.userType) {
+  const Model = getModel(userType);
+
+  // Anyone may register as a member, but admin accounts need the invite code.
+  if (userType === "admin") {
+    const allowed =
+      env.ADMIN_INVITE_CODE &&
+      safeEqual(req.get("x-invite-code"), env.ADMIN_INVITE_CODE);
+    if (!allowed) {
+      throw new HttpError(403, "admin sign-up is disabled");
+    }
+  }
+
+  const body = parseBody(req);
+  const isAdminCaller = Boolean(req.adminId);
+
+  for (const key of requiredFields[userType]) {
+    if (!body[key]) {
+      throw new HttpError(400, key + " is missing");
+    }
+  }
+  for (const key of numericFields) {
+    if (userType === "member" && !Number.isFinite(Number(body[key]))) {
+      throw new HttpError(400, key + " must be a number");
+    }
+  }
+  if (String(body.password).length < MIN_PASSWORD_LENGTH) {
+    throw new HttpError(
+      400,
+      `password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    );
+  }
+
+  const userData = {};
+  for (const key of [...requiredFields[userType], ...optionalFields[userType]]) {
+    if (body[key] !== undefined) userData[key] = body[key];
+  }
+  // Only an authenticated admin adding a member may set the initial status.
+  if (userType === "member" && isAdminCaller && body.activity_status) {
+    userData.activity_status = body.activity_status;
+  }
   if (req.imageFile) {
     userData.image = req.imageFile;
   }
 
-  //check if all required data exist
-  for (const key of userType === "admin" ? adminData : memberData) {
-    if (!userData[key]) {
-      return res.status(400).json({ error: key + " is missing" });
-    }
-  }
-  //check if a user exists by phone number
-  const userCheck = await classes[userType].findOne({
-    where: { phone_number: userData["phone_number"] },
+  const existing = await Model.findOne({
+    where: { phone_number: userData.phone_number },
   });
-  if (userCheck) {
-    return res
-      .status(400)
-      .json({ error: userData["phone_number"] + " exists" });
+  if (existing) {
+    throw new HttpError(400, userData.phone_number + " exists");
   }
 
-  //encrypting password to hash form
-  const hashed_password = await hash_password(userData["password"]);
-  userData["password"] = hashed_password;
+  userData.password = await hash_password(userData.password);
+  await Model.create(userData);
 
-  //creating new user using try/catch to catch unexpected errors
-  try {
-    const newUser = classes[userType].create(userData);
-    if (!newUser) {
-      return res.status(500).json({ error: "unable to create user" });
-    }
-    return res.status(201).json({ user: "user created successfuly" });
-  } catch (err) {
-    return res.status(500).json({ error: "function error - " + err });
-  }
+  return res.status(201).json({ user: "user created successfuly" });
 }
 
-authRouter.post("/sign-up/:userType", async (req, res) => {
-  return signUp(req, res);
-});
+authRouter.post("/sign-up/:userType", (req, res) => signUp(req, res));
+
 authRouter.post("/sign-in/:userType", async (req, res) => {
   const userType = req.params.userType;
-  const userData = req.body;
+  const Model = getModel(userType);
+  const userData = req.body ?? {};
 
-  //check if all required data exist
   for (const key of ["phone_number", "password"]) {
     if (!userData[key]) {
-      return res.status(400).json({ error: key + " is missing" });
+      throw new HttpError(400, key + " is missing");
     }
   }
-  //check if user exists
-  const userCheck = await classes[userType].findOne({
-    where: { phone_number: userData["phone_number"] },
+
+  const user = await Model.scope("withPassword").findOne({
+    where: { phone_number: String(userData.phone_number) },
   });
-
-  if (!userCheck) {
-    return res
-      .status(404)
-      .json({ error: `${userData["phone_number"]} not found` });
+  if (!user) {
+    throw new HttpError(404, `${userData.phone_number} not found`);
   }
 
-  //check if password is correct
-  const check_password = await verify_password(
-    userData["password"],
-    userCheck["password"],
-  );
-  if (!check_password) {
-    return res.status(400).json({ error: "incorrect password" });
+  const correct = await verify_password(String(userData.password), user.password);
+  if (!correct) {
+    throw new HttpError(400, "incorrect password");
   }
+
   const token = gen_jwt_token({
-    id: userCheck.id,
-    phone_number: userCheck.phone_number,
+    id: user.id,
+    phone_number: user.phone_number,
+    role: userType,
   });
-  userCheck.language = userData.language || "English";
-  userCheck.save();
-  return res.status(200).json({ userCheck, token: token });
+  user.language = userData.language || "English";
+  await user.save();
+
+  // Never send the hash back to the client.
+  const { password: _password, ...userCheck } = user.toJSON();
+  return res.status(200).json({ userCheck, token });
 });
 
 authRouter.get("/sign-up/:phoneNumber", async (req, res) => {
-  const phoneNumber = req.params.phoneNumber;
-  try {
-    const checkNumber = await Member.findOne({
-      where: { phone_number: phoneNumber },
-    });
-    if (!checkNumber) {
-      return res.status(404).json({ error: "phone number not found" });
-    }
-  } catch {
-    return res.status(500).json({ error: "server error" });
+  const member = await Member.findOne({
+    where: { phone_number: req.params.phoneNumber },
+  });
+  if (!member) {
+    throw new HttpError(404, "phone number not found");
   }
   return res.status(200).json({ user: "phone number exists" });
 });
+
 authRouter.get("/self", async (req, res) => {
   const authHeader = req.headers["authorization"];
-
   if (!authHeader) {
     return res.status(401).json({ message: "No Authorization header found" });
   }
@@ -134,13 +166,9 @@ authRouter.get("/self", async (req, res) => {
       .status(401)
       .json({ message: "Token format must be 'Bearer <token>'" });
   }
-  const token = parts[1];
 
   try {
-    const verifyToken = jwt_verify(token);
-    if (!verifyToken) {
-      return res.status(401).json({ error: "invalid token" });
-    }
+    jwt_verify(parts[1]);
   } catch (err) {
     if (err.name === "TokenExpiredError") {
       return res
@@ -152,4 +180,5 @@ authRouter.get("/self", async (req, res) => {
 
   return res.status(200).json({ token: "correct" });
 });
+
 export default authRouter;
