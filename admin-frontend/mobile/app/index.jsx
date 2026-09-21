@@ -4,7 +4,8 @@ import NetInfo from "@react-native-community/netinfo";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { ImageBackground, View } from "react-native";
+import { View } from "react-native";
+import { ImageBackground } from "../components/AppImage";
 import ApiClient from "../utils/ApiClient";
 
 const App = () => {

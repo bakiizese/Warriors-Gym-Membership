@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
-  ImageBackground,
   Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { ImageBackground } from "../../components/AppImage";
 import AppGradient from "../../components/AppGradient";
 
 import absWorkout from "../../assets/images/workoutBgImages/Abs.jpeg";
@@ -18,12 +18,13 @@ import shoulderWorkout from "../../assets/images/workoutBgImages/Shoulder.jpeg";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../../utils/fileSystem";
 import { useCallback, useEffect, useState } from "react";
 import calfWorkout from "../../assets/images/workoutBgImages/Calf.jpeg";
 import gluteHamstringWorkout from "../../assets/images/workoutBgImages/GluteHamstring.jpeg";
 import quadWorkout from "../../assets/images/workoutBgImages/Quad.jpeg";
 import ApiClient from "../../utils/ApiClient";
+import { isFullUri } from "../../utils/uri";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -179,7 +180,7 @@ const ManageWorkoutPlans = () => {
         return checkFile.uri;
       }
 
-      if (fileUri?.path.includes("file://")) {
+      if (isFullUri(fileUri?.path)) {
         console.log("edit name first");
         const fileName = fileUri.path.split("/").pop();
         const newFileName = `uploads/videos/${fileName}`;

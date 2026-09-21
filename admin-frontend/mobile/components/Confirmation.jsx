@@ -1,10 +1,10 @@
 import {
   ActivityIndicator,
-  Image,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "./AppImage";
 import remove from "@/assets/icons/remove.png";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";

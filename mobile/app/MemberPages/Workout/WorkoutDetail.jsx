@@ -9,10 +9,11 @@ import {
 } from "react-native";
 import AppGradient from "../../../components/AppGradient";
 import { useEffect, useState } from "react";
-import { Video } from "react-native-video";
+import Video from "../../../components/VideoPlayer";
 import Thumbnail from "../../../components/Thumbnail";
 import { useTranslation } from "react-i18next";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../../../utils/fileSystem";
+import { isFullUri } from "../../../utils/uri";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const WorkoutDetail = () => {
@@ -33,9 +34,7 @@ const WorkoutDetail = () => {
       );
       const filtered = sorted.filter(
         (item) =>
-          typeof item.video.path === "number" ||
-          (typeof item.video.path === "string" &&
-            item.video.path.includes("file://")),
+          typeof item.video.path === "number" || isFullUri(item.video.path),
       );
       setWorkouts(filtered);
     }
@@ -70,14 +69,12 @@ const WorkoutDetail = () => {
             <View className="flex-1">
               <View className="w-full h-[43%] p-2 border-b-[1px] border-black relative">
                 <View className="flex-1 bg-black justify-center items-center rounded-2xl">
-                  {(typeof currentVideo?.video?.path === "string" &&
-                    currentVideo.video.path.includes("file://")) ||
+                  {isFullUri(currentVideo?.video?.path) ||
                   typeof currentVideo?.video?.path === "number" ? (
                     <>
                       <Video
                         source={
-                          typeof currentVideo?.video?.path === "string" &&
-                          currentVideo.video.path.includes("file://")
+                          isFullUri(currentVideo?.video?.path)
                             ? { uri: currentVideo?.video?.path }
                             : currentVideo?.video?.path
                         }

@@ -6,13 +6,13 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Image,
   Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "../../components/AppImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import dumbbell from "../../assets/icons/dumbbell.png";
 import AppGradient from "../../components/AppGradient";
@@ -102,7 +102,10 @@ const Membership = () => {
                         <View className="flex justify-center items-center gap-2 m-3">
                           <Image source={dumbbell} className="h-8 w-12" />
                           <Text className="text-white leading-none text-[60px] font-jura-bold">
-                            ${membershipItem.fee}
+                            {membershipItem.fee}
+                          </Text>
+                          <Text className="text-white leading-none text-[20px] font-jura">
+                            Birr
                           </Text>
                         </View>
                         <View className="h-1 w-[95%] bg-[#55318D]/80" />

@@ -6,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Image } from "../AppImage";
 import i18n from "../../i18n";
 import ApiClient from "../../utils/ApiClient";
 import Age from "./Attributes/Age";
@@ -64,8 +64,9 @@ const Auth = ({ path } = {}) => {
       "Please select your weight",
     ],
     page: [
-      <LangingPage />,
+      <LangingPage key="landing" />,
       <SignIn
+        key="sign-in"
         setPhoneNumber={setPhoneNumber}
         phoneNumber={phoneNumber}
         setPassword={setPassword}
@@ -73,6 +74,7 @@ const Auth = ({ path } = {}) => {
         errorMessage={errorMessage}
       />,
       <SignUp
+        key="sign-up"
         setFullName={setFullName}
         fullName={fullName}
         setPhoneNumber={setPhoneNumber}
@@ -81,10 +83,10 @@ const Auth = ({ path } = {}) => {
         password={password}
         errorMessage={errorMessage}
       />,
-      <Gender gender={gender} setGender={setGender} />,
-      <Age setSelectedAge={setSelectedAge} />,
-      <Height setSelectedHeight={setSelectedHeight} />,
-      <Weight setSelectedWeight={setSelectedWeight} />,
+      <Gender key="gender" gender={gender} setGender={setGender} />,
+      <Age key="age" setSelectedAge={setSelectedAge} />,
+      <Height key="height" setSelectedHeight={setSelectedHeight} />,
+      <Weight key="weight" setSelectedWeight={setSelectedWeight} />,
     ],
     buttonText: [
       "Let's Go",

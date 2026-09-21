@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { View, ImageBackground } from "react-native";
+import { View } from "react-native";
+import { ImageBackground } from "../components/AppImage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import warriors from "@/assets/images/logo.png";
 

@@ -11,7 +11,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   ScrollView,
   Text,
@@ -19,11 +18,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "./AppImage";
 import profile_r from "../assets/icons/profile-r.png";
 import profile from "../assets/icons/profile.png";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "./AuthPage/SelectLanguage";
 import i18n from "../i18n";
+import { isFullUri } from "../utils/uri";
 
 const EditMember = ({
   editData,
@@ -185,7 +186,7 @@ const EditMember = ({
                       ? { uri: localImage }
                       : personalData?.image
                         ? {
-                            uri: personalData.image.includes("file://")
+                            uri: isFullUri(personalData.image)
                               ? personalData.image
                               : `${ADDRESS}/${personalData.image}`,
                           }

@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "./fileSystem";
 
 const saveImage = async (user) => {
   const ADDRESS = process.env.EXPO_PUBLIC_ADDRESS;

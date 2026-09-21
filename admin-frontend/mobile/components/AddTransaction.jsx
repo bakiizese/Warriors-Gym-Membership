@@ -308,7 +308,7 @@ const AddTransaction = ({
                           : "Daily"}
                       </Text>
                       <Text className="text-white text-center font-jura text-[20px] max-h-12 max-w-[120px]">
-                        ${item.fee}
+                        {item.fee} {t("components.Birr")}
                       </Text>
                     </TouchableOpacity>
                   ))}

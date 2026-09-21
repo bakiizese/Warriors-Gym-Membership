@@ -1,9 +1,10 @@
 import CommonEdit from "./CommonEdit";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "./AppImage";
 import edit from "@/assets/icons/edit.png";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Video } from "react-native-video";
+import Video from "./VideoPlayer";
 import { useTranslation } from "react-i18next";
 
 const WorkoutCrud = ({

@@ -5,8 +5,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Image,
 } from "react-native";
+import { Image } from "../../components/AppImage";
 import AppGradient from "../../components/AppGradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable } from "react-native";

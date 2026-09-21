@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   FlatList,
-  ImageBackground,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ImageBackground } from "../../../components/AppImage";
 import AppGradient from "../../../components/AppGradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ApiClient from "../../../utils/ApiClient";
@@ -25,7 +25,8 @@ import calfWorkout from "../../../assets/images/workoutBgImages/Calf.jpeg";
 import quadWorkout from "../../../assets/images/workoutBgImages/Quad.jpeg";
 import gluteHamstringWorkout from "../../../assets/images/workoutBgImages/GluteHamstring.jpeg";
 import { useCallback, useEffect, useState } from "react";
-import * as FileSystem from "expo-file-system/legacy";
+import * as FileSystem from "../../../utils/fileSystem";
+import { isFullUri } from "../../../utils/uri";
 import { useTranslation } from "react-i18next";
 
 import workoutLocalData from "../../../constants/localWorkoutData";
@@ -182,7 +183,7 @@ const Workout = () => {
         // console.log("file exists -size -", checkFile.size);
         return checkFile.uri;
       }
-      if (fileUri?.path.includes("file://")) {
+      if (isFullUri(fileUri?.path)) {
         // console.log("edit name first");
         const fileName = fileUri.path.split("/").pop();
         const newFileName = `uploads/videos/${fileName}`;

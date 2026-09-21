@@ -53,13 +53,15 @@ const MEMBERS = [
   { name: "Eyob Negash", gender: "male", height: 177, weight: 81, age: 37, plan: "quarterly", endsInDays: 45, visits: [6, 30, 54, 102] },
 ];
 
+// The apps sort a workout type's steps by Number(level) and print the break as
+// "<rest> mins break", so `level` is the step number and `rest` is in minutes.
 const WORKOUTS = [
-  { type: "Chest", title: "Cable Seated Chest Fly", level: "Intermediate", rep: 12, sets: 3, rest: "60 sec", file: "chest-cable-fly.mp4" },
-  { type: "Back", title: "Seated Row", level: "Beginner", rep: 12, sets: 3, rest: "60 sec", file: "back-seated-row.mp4" },
-  { type: "Shoulder", title: "Standing Single Delt Row", level: "Intermediate", rep: 10, sets: 3, rest: "60 sec", file: "shoulder-delt-row.mp4" },
-  { type: "Arm", title: "One Arm Triceps Extension", level: "Beginner", rep: 12, sets: 3, rest: "45 sec", file: "arm-triceps-extension.mp4" },
-  { type: "Abs", title: "Front Plank", level: "Beginner", rep: 1, sets: 3, rest: "45 sec", file: "abs-front-plank.mp4" },
-  { type: "Glute & Hamstring", title: "Cable Donkey Kickback", level: "Intermediate", rep: 15, sets: 3, rest: "60 sec", file: "glute-donkey-kickback.mp4" },
+  { type: "Chest", title: "Cable Seated Chest Fly", level: "1", rep: 12, sets: 3, rest: "1", file: "chest-cable-fly.mp4" },
+  { type: "Back", title: "Seated Row", level: "1", rep: 12, sets: 3, rest: "1", file: "back-seated-row.mp4" },
+  { type: "Shoulder", title: "Standing Single Delt Row", level: "1", rep: 10, sets: 3, rest: "1", file: "shoulder-delt-row.mp4" },
+  { type: "Arm", title: "One Arm Triceps Extension", level: "1", rep: 12, sets: 3, rest: "0.75", file: "arm-triceps-extension.mp4" },
+  { type: "Abs", title: "Front Plank", level: "1", rep: 1, sets: 3, rest: "0.75", file: "abs-front-plank.mp4" },
+  { type: "Glute & Hamstring", title: "Cable Donkey Kickback", level: "1", rep: 15, sets: 3, rest: "1", file: "glute-donkey-kickback.mp4" },
 ];
 
 const PROGRAMS = [

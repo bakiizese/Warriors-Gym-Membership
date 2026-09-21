@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "../../components/AppImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import payment from "../../assets/icons/payment.png";
 import phone from "../../assets/icons/phone.png";
@@ -51,7 +51,7 @@ const Payment = () => {
     const token = await AsyncStorage.getItem("userToken");
     membershipData.isNew = newMembership;
     try {
-      const res = await ApiClient.post("/member/membership", membershipData, {
+      const res = await ApiClient.post("/member/membership/off", membershipData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(res.data);
@@ -270,8 +270,8 @@ const Payment = () => {
                       <Text className="text-white leading-none text-[30px] font-jura-bold px-3 py-2">
                         {newMembership
                           ? membershipData.fee
-                          : membershipData.membershipPlan.fee}
-                        $
+                          : membershipData.membershipPlan.fee}{" "}
+                        Birr
                       </Text>
                     </View>
                   </View>

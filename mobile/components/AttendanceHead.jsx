@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { Image } from "./AppImage";
 import strike from "../assets/icons/strike.png";
 import noStrike from "../assets/icons/noStrike.png";
 import { addDays, subDays } from "date-fns";
