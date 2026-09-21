@@ -126,6 +126,16 @@ Ports, the database password and the JWT secret can be overridden with a `.env` 
 
 On a device or emulator the apps run natively; the containers above serve their browser builds (`npx expo export --platform web`). The API address is baked into that build, so to point it elsewhere rebuild with `EXPO_PUBLIC_ADDRESS` set.
 
+### Android APKs
+
+Pushing a version tag builds both apps with Gradle on GitHub Actions and attaches them to a release:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The workflow ([release-apk.yml](.github/workflows/release-apk.yml)) needs the `API_URL` repository variable set to the hosted API address, because the apps have it baked in. The APKs are 64-bit ARM only and signed with a debug key, so Android asks you to allow installing from an unknown source. The file names carry no version, so `releases/latest/download/warriors-admin.apk` and `warriors-member.apk` always point at the newest build.
+
 ## System Architecture
 
 ```text

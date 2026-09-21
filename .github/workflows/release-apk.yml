@@ -1,0 +1,148 @@
+name: Release APKs
+
+# Builds the Android apps (admin and member) with Gradle on GitHub's runners, so
+# no Expo account or build quota is involved. Push a version tag to publish them:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# The apps are built against the API address in the API_URL repository variable
+# (Settings > Secrets and variables > Actions > Variables), because Expo bakes it
+# into the bundle at build time.
+#
+# Manual runs and pull requests that change this file build the APKs and keep
+# them as run artifacts, without publishing a release.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: API address baked into the apps (default is the API_URL variable)
+        required: false
+  pull_request:
+    paths:
+      - ".github/workflows/release-apk.yml"
+
+concurrency:
+  group: release-apk-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.app }} APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: admin
+            dir: admin-frontend/mobile
+          - app: member
+            dir: mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve the API address
+        id: api
+        env:
+          INPUT_URL: ${{ inputs.api_url }}
+          VAR_URL: ${{ vars.API_URL }}
+        run: |
+          url="${INPUT_URL:-$VAR_URL}"
+          if [ -z "$url" ]; then
+            if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+              echo "::error::Set the API_URL repository variable to the hosted API address before tagging a release."
+              exit 1
+            fi
+            # 10.0.2.2 is how the Android emulator reaches the host machine. Fine
+            # for checking that the build works, not for a published release.
+            url="http://10.0.2.2:5000"
+          fi
+          case "$url" in
+            http://* | https://*) ;;
+            *) echo "::error::API address must start with http:// or https://"; exit 1 ;;
+          esac
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Building against $url"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm ci
+
+      # The android/ folder is not committed; Expo generates it from app.json.
+      - name: Generate the native Android project
+        working-directory: ${{ matrix.dir }}
+        env:
+          CI: "1"
+        run: npx expo prebuild --platform android --no-install
+
+      # arm64 covers nearly every current phone and keeps the APK smaller. The
+      # release build is signed with the debug key Expo generates, which is fine
+      # for a demo download but not for the Play Store.
+      - name: Build the APK
+        working-directory: ${{ matrix.dir }}/android
+        env:
+          EXPO_PUBLIC_ADDRESS: ${{ steps.api.outputs.url }}
+        run: >-
+          ./gradlew assembleRelease --no-daemon
+          -PreactNativeArchitectures=arm64-v8a
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      # The file name has no version, so the landing page can link to
+      # releases/latest/download/warriors-<app>.apk and always get the newest.
+      - name: Name the APK
+        working-directory: ${{ matrix.dir }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk "warriors-${{ matrix.app }}.apk"
+          ls -lh "warriors-${{ matrix.app }}.apk"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apk-${{ matrix.app }}
+          path: ${{ matrix.dir }}/warriors-${{ matrix.app }}.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: apk-*
+          merge-multiple: true
+          path: apks
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" apks/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "Android builds of the Warriors Gym admin and member apps, talking to the demo API at $API_URL.
+
+          They are for 64-bit ARM phones and signed with a debug key, so Android will ask you to allow installing from an unknown source."
