@@ -50,6 +50,8 @@ jobs:
             stack:
               - 'backend/**'
               - 'admin-frontend/web/**'
+              - 'admin-frontend/mobile/**'
+              - 'mobile/**'
               - 'docker-compose*.yml'
               - 'Makefile'
               - '.github/workflows/ci.yml'
@@ -201,13 +203,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Start the stack
         run: docker compose up --build -d --wait --wait-timeout 240
-      - name: Check the API and the web admin
+      - name: Check the API and the three web apps
         run: |
           curl --fail --silent --show-error http://localhost:5000/health
           echo
           curl --fail --silent --show-error http://localhost:5000/docs/ > /dev/null
           curl --fail --silent --show-error http://localhost:8080/ | grep -q '<div id="root">'
           curl --fail --silent --show-error http://localhost:8080/config.js | grep -q 'localhost:5000'
+          # The mobile browser builds: pre-rendered routes resolve without .html,
+          # and the API accepts calls from their origins.
+          curl --fail --silent --show-error http://localhost:8081/AuthPage | grep -q 'Warriors Gym - Admin'
+          curl --fail --silent --show-error http://localhost:8082/AuthPage | grep -q 'Warriors Gym - Member'
+          for origin in 8080 8081 8082; do
+            curl --silent --head -H "Origin: http://localhost:$origin" http://localhost:5000/health \
+              | grep -qi "access-control-allow-origin: http://localhost:$origin"
+          done
       - name: Container logs
         if: failure()
         run: docker compose logs --no-color --tail 200
