@@ -2,7 +2,7 @@ import express from "express";
 import Member from "../models/Member.js";
 import MembershipPlan from "../models/MembershipPlan.js";
 import Admin from "../models/Admin.js";
-import { admin_auth } from "./middlewares.js";
+import { admin_auth } from "../middleware/auth.js";
 import { signUp } from "./auth_route.js";
 import Membership from "../models/Membership.js";
 import { Op } from "sequelize";
@@ -87,7 +87,9 @@ adminRouter.put("/profile", uploadFields, admin_auth, async (req, res) => {
 
     const adminId = req.adminId;
     const updateData = JSON.parse(req.body.metadata);
-    const user = await Admin.findOne({ where: { id: adminId } });
+    const user = await Admin.scope("withPassword").findOne({
+      where: { id: adminId },
+    });
     for (const key in updateData) {
       if (
         ![

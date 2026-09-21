@@ -1,52 +1,67 @@
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import sequelize from "./config/database.js";
-import "./models/Member.js";
-import "./models/Admin.js";
-import "./models/AttendanceLog.js";
-import "./models/TransactionHistory.js";
-import "./models/MembershipPlan.js";
-import "./models/WorkoutPlan.js";
-import "./models/Image.js";
-import "./models/Video.js";
+import { env } from "./config/env.js";
 import association from "./models/Association.js";
 import authRouter from "./routes/auth_route.js";
 import adminRouter from "./routes/admin_route.js";
 import memberRouter from "./routes/member_route.js";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import path from "path";
-import cors from "cors";
+import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { errorHandler, notFound } from "./middleware/errors.js";
 
-const PORT = 5000;
-const HOST = "0.0.0.0";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-app.use(express.json());
-
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use(cors());
-
-dotenv.config();
 association();
 
-sequelize
-  .sync({ alert: true })
-  .then(() => console.log("tables created successfuly"));
+const app = express();
 
-//routes
-app.use("/auth", authRouter);
+// Render, Fly and most hosts terminate TLS in front of the app; without this
+// every client shares the proxy's IP and the rate limiter would lock everyone out.
+if (env.isProd) {
+  app.set("trust proxy", 1);
+}
+
+app.use(
+  helmet({
+    // Uploaded images and videos are loaded by the web admin from another origin.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Native mobile apps and curl send no Origin header.
+      if (!origin) return callback(null, true);
+      const allowAll =
+        env.CORS_ORIGINS.includes("*") ||
+        (!env.isProd && env.CORS_ORIGINS.length === 0);
+      return callback(null, allowAll || env.CORS_ORIGINS.includes(origin));
+    },
+  }),
+);
+app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(apiLimiter);
+
+app.get("/ping", (req, res) => res.status(200).json({ ping: "success" }));
+
+app.get("/health", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    return res.status(200).json({ status: "ok", db: "up" });
+  } catch {
+    return res.status(503).json({ status: "degraded", db: "down" });
+  }
+});
+
+app.use("/auth", authLimiter, authRouter);
 app.use("/admin", adminRouter);
 app.use("/member", memberRouter);
 
-app.get("/ping", (req, res) => {
-  return res.status(200).json({ ping: "success" });
-});
-
-app.listen(PORT, HOST, () =>
-  console.log(`server running in http://${HOST}:${PORT}.....`),
-);
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;

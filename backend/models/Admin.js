@@ -36,7 +36,13 @@ Admin.init(
       allowNull: true,
     },
   },
-  { sequelize, modelName: "admin" },
+  {
+    sequelize,
+    modelName: "admin",
+    // See Member.js: opt in with Admin.scope("withPassword").
+    defaultScope: { attributes: { exclude: ["password"] } },
+    scopes: { withPassword: { attributes: { include: ["password"] } } },
+  },
 );
 
 export default Admin;

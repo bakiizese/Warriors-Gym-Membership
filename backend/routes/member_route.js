@@ -1,13 +1,13 @@
 import express from "express";
-import { member_auth } from "./middlewares.js";
+import { member_auth } from "../middleware/auth.js";
 import Member from "../models/Member.js";
 import MembershipPlan from "../models/MembershipPlan.js";
-import { verify_password } from "../utils/password.js";
+import { hash_password, verify_password } from "../utils/password.js";
 import TransactionHistory from "../models/TransactionHistory.js";
 import Membership from "../models/Membership.js";
 import AttendanceLog from "../models/AttendanceLog.js";
 import { Op } from "sequelize";
-import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
+import { gen_jwt_token } from "../utils/jwt.js";
 import WorkoutPlan from "../models/WorkoutPlan.js";
 import Video from "../models/Video.js";
 import { payment } from "../utils/payment.js";
@@ -45,7 +45,9 @@ memberRouter.put("/profile", uploadFields, member_auth, async (req, res) => {
 
     const memberId = req.memberId;
     const updateData = JSON.parse(req.body.metadata);
-    const user = await Member.findOne({ where: { id: memberId } });
+    const user = await Member.scope("withPassword").findOne({
+      where: { id: memberId },
+    });
     for (const key in updateData) {
       if (
         ![
@@ -88,8 +90,7 @@ memberRouter.put("/profile", uploadFields, member_auth, async (req, res) => {
       if (!checkPassword) {
         return res.status(400).json({ error: "incorrect oldPassword" });
       }
-      const hash_password = await hash_password(updateData["password"]);
-      user.password = hash_password;
+      user.password = await hash_password(updateData["password"]);
     }
 
     if (

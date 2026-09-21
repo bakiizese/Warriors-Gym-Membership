@@ -71,6 +71,10 @@ Member.init(
   {
     sequelize,
     modelName: "member",
+    // The password hash never leaves the database unless a query opts in with
+    // Member.scope("withPassword"). Includes from other models honour this too.
+    defaultScope: { attributes: { exclude: ["password"] } },
+    scopes: { withPassword: { attributes: { include: ["password"] } } },
   },
 );
 

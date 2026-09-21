@@ -59,15 +59,16 @@ export const payment = async (paymentData) => {
   }
 };
 
-const chapaPayment = async (chapaPayload) => {
-  console.log("in chapa");
+// Not wired into a route yet (the checkout flow is disabled). Configure with
+// CHAPA_SECRET_KEY and CHAPA_CALLBACK_URL before enabling it.
+export const chapaPayment = async (chapaPayload) => {
+  const secretKey = process.env.CHAPA_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("CHAPA_SECRET_KEY is not set");
+  }
   var myHeaders = new Headers();
-  ///use .env for secrate key
   ///handle error correctly
-  myHeaders.append(
-    "Authorization",
-    "Bearer CHASECK_TEST-19VF66JrpQoGAaGT573XXlwUtrxDuNxT",
-  );
+  myHeaders.append("Authorization", `Bearer ${secretKey}`);
   myHeaders.append("Content-Type", "application/json");
 
   var raw = JSON.stringify({
@@ -77,8 +78,7 @@ const chapaPayment = async (chapaPayload) => {
     last_name: chapaPayload.last_name,
     phone_number: chapaPayload.phone_number,
     tx_ref: chapaPayload.payment_id,
-    callback_url:
-      "https://readier-floy-temperately.ngrok-free.dev/member/webhook/chapa",
+    callback_url: process.env.CHAPA_CALLBACK_URL,
     // return_url: "https://www.google.com/",
     "customization[title]": "Membership Payment",
     "customization[description]": "Month 2",
