@@ -1,7 +1,9 @@
 COMPOSE  := docker compose
 DEV      := UID=$(shell id -u) GID=$(shell id -g) $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
-BACKEND_PORT   ?= 5000
-ADMIN_WEB_PORT ?= 8080
+BACKEND_PORT       ?= 5000
+ADMIN_WEB_PORT     ?= 8080
+ADMIN_MOBILE_PORT  ?= 8081
+MEMBER_MOBILE_PORT ?= 8082
 
 .DEFAULT_GOAL := help
 .PHONY: help up down logs ps dev dev-down test seed reseed psql clean
@@ -9,11 +11,13 @@ ADMIN_WEB_PORT ?= 8080
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-up: ## Build and start the stack (db, api, admin web) in the background
+up: ## Build and start the stack (db, api, admin web, mobile web builds) in the background
 	$(COMPOSE) up --build -d --wait
 	@echo ""
-	@echo "  Admin web   http://localhost:$(ADMIN_WEB_PORT)"
-	@echo "  API docs    http://localhost:$(BACKEND_PORT)/docs"
+	@echo "  Admin web     http://localhost:$(ADMIN_WEB_PORT)"
+	@echo "  Admin mobile  http://localhost:$(ADMIN_MOBILE_PORT)"
+	@echo "  Member mobile http://localhost:$(MEMBER_MOBILE_PORT)"
+	@echo "  API docs      http://localhost:$(BACKEND_PORT)/docs"
 	@echo "  Demo logins admin 0900000001 / demo1234   member 0911000001 / demo1234"
 
 down: ## Stop the stack (keeps data)

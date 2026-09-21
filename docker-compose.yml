@@ -1,12 +1,14 @@
-# Warriors Gym, local stack: Postgres + API + admin web.
+# Warriors Gym, local stack: Postgres + API + admin web + the browser builds of
+# the two mobile apps.
 #
 #   docker compose up --build        (or: make up)
 #
 # Defaults give a working demo out of the box (sample data, demo logins).
 # Override anything by copying .env.example to .env next to this file.
 #
-# The two mobile apps are not containers: they run on a phone or in Expo.
-# Point them at http://<your machine's LAN IP>:5000.
+# The mobile apps themselves run on a phone (or in Expo); on a phone, point them
+# at http://<your machine's LAN IP>:5000. The two *-mobile-web services serve
+# their browser builds, which is what the hosted demo shows.
 
 name: warriors
 
@@ -43,7 +45,8 @@ services:
       DATABASE_URL: postgres://warriors:${POSTGRES_PASSWORD:-warriors}@db:5432/warriors
       # Local-only default so `up` just works. Set a real one anywhere else.
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-only-secret-change-me-0123456789abcdef}
-      CORS_ORIGINS: http://localhost:${ADMIN_WEB_PORT:-8080}
+      # Browser origins allowed to call the API: the three web apps by default.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:${ADMIN_WEB_PORT:-8080},http://localhost:${ADMIN_MOBILE_PORT:-8081},http://localhost:${MEMBER_MOBILE_PORT:-8082}}
       # Seeds sample data into an empty database and locks the demo logins.
       DEMO_MODE: ${DEMO_MODE:-true}
       DEMO_RESET_TOKEN: ${DEMO_RESET_TOKEN:-}
@@ -78,6 +81,29 @@ services:
       API_URL: http://localhost:${BACKEND_PORT:-5000}
     ports:
       - "${ADMIN_WEB_PORT:-8080}:8080"
+
+  admin-mobile-web:
+    build:
+      context: ./admin-frontend/mobile
+      target: runtime
+      args:
+        # Baked into the bundle at build time (the browser's view of the API).
+        EXPO_PUBLIC_ADDRESS: http://localhost:${BACKEND_PORT:-5000}
+    image: warriors-admin-mobile-web
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_MOBILE_PORT:-8081}:8080"
+
+  member-mobile-web:
+    build:
+      context: ./mobile
+      target: runtime
+      args:
+        EXPO_PUBLIC_ADDRESS: http://localhost:${BACKEND_PORT:-5000}
+    image: warriors-member-mobile-web
+    restart: unless-stopped
+    ports:
+      - "${MEMBER_MOBILE_PORT:-8082}:8080"
 
   # Runs the backend test suite: docker compose --profile test run --rm backend-test
   backend-test:

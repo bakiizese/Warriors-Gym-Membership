@@ -90,7 +90,7 @@ Features may include:
 
 ### Run everything with Docker (recommended)
 
-You need Docker with the Compose plugin. One command starts PostgreSQL, the API and the admin web app, with sample data and demo logins already loaded.
+You need Docker with the Compose plugin. One command starts PostgreSQL, the API, the admin web app and the browser builds of both mobile apps, with sample data and demo logins already loaded. The first build takes a few minutes, since it compiles the two Expo apps.
 
 ```bash
 git clone https://github.com/bakiizese/Warriors-Gym-Membership.git
@@ -101,6 +101,8 @@ make up            # or: docker compose up --build -d
 | What | Where |
 | --- | --- |
 | Admin web app | http://localhost:8080 |
+| Admin mobile app (browser build) | http://localhost:8081 |
+| Member mobile app (browser build) | http://localhost:8082 |
 | API docs (Swagger UI) | http://localhost:5000/docs |
 | Demo admin login | `0900000001` / `demo1234` |
 | Demo member login | `0911000001` / `demo1234` |
@@ -122,7 +124,7 @@ Ports, the database password and the JWT secret can be overridden with a `.env` 
 - **Admin web:** `cd admin-frontend/web && cp .env.example .env && npm ci && npm run dev`
 - **Mobile apps** (`admin-frontend/mobile` for admins, `mobile` for members): `cp .env.example .env`, set `EXPO_PUBLIC_ADDRESS` to your machine's LAN IP (a phone cannot reach `localhost`), then `npm ci && npx expo start`.
 
-The mobile apps run on a device or emulator rather than in a container.
+On a device or emulator the apps run natively; the containers above serve their browser builds (`npx expo export --platform web`). The API address is baked into that build, so to point it elsewhere rebuild with `EXPO_PUBLIC_ADDRESS` set.
 
 ## System Architecture
 
