@@ -1,0 +1,97 @@
+# Warriors Gym, local stack: Postgres + API + admin web.
+#
+#   docker compose up --build        (or: make up)
+#
+# Defaults give a working demo out of the box (sample data, demo logins).
+# Override anything by copying .env.example to .env next to this file.
+#
+# The two mobile apps are not containers: they run on a phone or in Expo.
+# Point them at http://<your machine's LAN IP>:5000.
+
+name: warriors
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: warriors
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-warriors}
+      POSTGRES_DB: warriors
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Loopback only, and 5433 so it does not clash with a Postgres already on 5432.
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warriors -d warriors"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    image: warriors-backend
+    init: true
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://warriors:${POSTGRES_PASSWORD:-warriors}@db:5432/warriors
+      # Local-only default so `up` just works. Set a real one anywhere else.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-only-secret-change-me-0123456789abcdef}
+      CORS_ORIGINS: http://localhost:${ADMIN_WEB_PORT:-8080}
+      # Seeds sample data into an empty database and locks the demo logins.
+      DEMO_MODE: ${DEMO_MODE:-true}
+      DEMO_RESET_TOKEN: ${DEMO_RESET_TOKEN:-}
+      ADMIN_INVITE_CODE: ${ADMIN_INVITE_CODE:-}
+    # Declared here rather than only in the image so it also covers the dev target.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    volumes:
+      - uploads:/data/uploads
+
+  admin-web:
+    build:
+      context: ./admin-frontend/web
+      target: runtime
+    image: warriors-admin-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # The address the *browser* uses to reach the API, not the container network name.
+      API_URL: http://localhost:${BACKEND_PORT:-5000}
+    ports:
+      - "${ADMIN_WEB_PORT:-8080}:8080"
+
+  # Runs the backend test suite: docker compose --profile test run --rm backend-test
+  backend-test:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The suite creates and drops its own schema inside this database.
+      TEST_DATABASE_URL: postgres://warriors:${POSTGRES_PASSWORD:-warriors}@db:5432/warriors
+
+volumes:
+  pgdata:
+  uploads:

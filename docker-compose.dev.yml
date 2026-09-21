@@ -1,0 +1,34 @@
+# Hot-reload overrides. Use together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build   (or: make dev)
+#
+# Source is bind-mounted, so edits reload the backend (nodemon) and web admin (Vite).
+
+services:
+  backend:
+    build:
+      target: dev
+    image: warriors-backend:dev
+    # Run as you, so files written to the bind mount (uploads) are not root-owned.
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      NODE_ENV: development
+      CORS_ORIGINS: http://localhost:5173
+      UPLOADS_DIR: ""
+    volumes:
+      # Uploads land in ./backend/uploads on your machine (UPLOADS_DIR is unset above).
+      - ./backend:/app
+      - /app/node_modules
+
+  admin-web:
+    build:
+      target: dev
+    image: warriors-admin-web:dev
+    environment:
+      API_URL: ""
+      VITE_ADDRESS: http://localhost:${BACKEND_PORT:-5000}
+    ports: !override
+      - "5173:5173"
+    volumes:
+      - ./admin-frontend/web:/app
+      - /app/node_modules

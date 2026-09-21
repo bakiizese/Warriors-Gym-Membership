@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ADDRESS } from "../utils/config";
 import AppGradient from "./AppGradient";
 import WorkoutCrud from "../Component/WorkoutCrud";
 import ApiClient from "../utils/ApiClient";
@@ -13,7 +14,6 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
   const [loading, setLoading] = useState(false);
   const [currentVideo, setCurrentVideo] = useState();
   const [updateData, setUpdateData] = useState();
-  const ADDRESS = import.meta.env.VITE_ADDRESS;
   const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
