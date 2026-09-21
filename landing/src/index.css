@@ -1,0 +1,238 @@
+@import "@fontsource/jura/latin-400.css";
+@import "@fontsource/jura/latin-500.css";
+@import "@fontsource/jura/latin-700.css";
+@import "@fontsource-variable/inter/index.css";
+@import "tailwindcss";
+
+/*
+ * Palette. The roles are strict so the page stays calm:
+ *   red   the ribbon from the logo: actions and labels
+ *   gold  the crown: numbers and credentials
+ *   neon  the app's outline green: "live" signals and focus, nothing else
+ *   slate + tan  the gradient behind every screen in the apps
+ */
+@theme {
+  --font-display: "Jura", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #08090c;
+  --color-panel: #0e1017;
+  --color-panel-2: #141722;
+  --color-line: #232733;
+  --color-text: #f2f3f7;
+  --color-muted: #9aa1b5;
+
+  --color-red: #d9252b;
+  --color-red-hot: #f0353b;
+  --color-gold: #f0b429;
+  --color-neon: #3dff6e;
+  --color-slate: #4a5b86;
+  --color-tan: #b98a63;
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-ink);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: var(--color-red);
+    color: white;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-neon);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  /* Banner label with the notched tails of the ribbon in the logo. */
+  .ribbon {
+    display: inline-block;
+    padding: 0.32rem 1.35rem;
+    background: var(--color-red);
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 0.55rem) 50%, 100% 100%, 0 100%, 0.55rem 50%);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.9rem;
+    padding: 0 1.5rem;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.2s ease;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  .btn-red {
+    background: var(--color-red);
+    color: white;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 10px 28px -10px rgb(217 37 43 / 0.8);
+  }
+  .btn-red:hover {
+    background: var(--color-red-hot);
+  }
+
+  /* The outlined pill from the apps' Check In and Pay buttons. */
+  .btn-ring {
+    border: 2px solid var(--color-neon);
+    color: var(--color-text);
+    background: transparent;
+    box-shadow: 0 0 22px -6px rgb(61 255 110 / 0.35);
+  }
+  .btn-ring:hover {
+    background: rgb(61 255 110 / 0.09);
+    box-shadow: 0 0 30px -4px rgb(61 255 110 / 0.5);
+  }
+
+  .card {
+    background: linear-gradient(160deg, var(--color-panel-2), var(--color-panel) 55%);
+    border: 1px solid var(--color-line);
+    border-radius: 1.4rem;
+  }
+
+  .label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+}
+
+/* The apps' slate-to-tan gradient, as a soft glow behind the hero phones. */
+.hero-glow {
+  background:
+    radial-gradient(55% 45% at 78% 30%, rgb(74 91 134 / 0.6), transparent 70%),
+    radial-gradient(40% 35% at 88% 80%, rgb(185 138 99 / 0.42), transparent 72%),
+    radial-gradient(35% 30% at 8% 0%, rgb(217 37 43 / 0.14), transparent 70%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent);
+}
+
+/* The demo section sits on the same slate-to-tan gradient the apps use. */
+.try-band {
+  background: linear-gradient(180deg, rgb(74 91 134 / 0.18), rgb(185 138 99 / 0.1) 75%, transparent);
+}
+
+/* Blueprint dot grid behind the architecture diagram. */
+.blueprint {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Dashes that drift along the diagram's arrows. */
+.flow {
+  stroke-dasharray: 6 8;
+  animation: flow 1.4s linear infinite;
+}
+@keyframes flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+/* Film grain over the whole page: keeps big dark areas from looking flat. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Scroll reveal: elements start slightly low and faded, then settle. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms);
+}
+[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
