@@ -40,49 +40,6 @@ const ManageMembers = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    offlineData();
-    fetchMembers();
-  }, []);
-
-  const offlineData = () => {
-    const members = localStorage.getItem("members");
-    if (members) {
-      setMembersData(JSON.parse(members));
-      search(filterSelections[0], true, JSON.parse(members));
-    }
-  };
-
-  const fetchMembers = async () => {
-    const token = localStorage.getItem("adminToken");
-    try {
-      const res = await ApiClient.get("admin/members", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      localStorage.setItem("members", JSON.stringify(res.data.members));
-      setMembersData(res.data.members);
-      search(filterSelections[0], true, res.data.members);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const removeMember = async (memberId) => {
-    const token = localStorage.getItem("adminToken");
-
-    try {
-      await ApiClient.delete(`admin/member/${memberId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setConfirm(false);
-
-      fetchMembers();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
   const formatDate = (createdAt) => {
     const date = new Date(createdAt);
     const day = String(date.getDate()).padStart(2, "0");
@@ -135,6 +92,50 @@ const ManageMembers = () => {
     });
 
     setFilteredMembersData(sorted);
+  };
+
+  const offlineData = () => {
+    const members = localStorage.getItem("members");
+    if (members) {
+      setMembersData(JSON.parse(members));
+      search(filterSelections[0], true, JSON.parse(members));
+    }
+  };
+
+  const fetchMembers = async () => {
+    const token = localStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("admin/members", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      localStorage.setItem("members", JSON.stringify(res.data.members));
+      setMembersData(res.data.members);
+      search(filterSelections[0], true, res.data.members);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: show the cached copy from localStorage at once, then refresh from the API
+    offlineData();
+    fetchMembers();
+  }, []);
+
+  const removeMember = async (memberId) => {
+    const token = localStorage.getItem("adminToken");
+
+    try {
+      await ApiClient.delete(`admin/member/${memberId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConfirm(false);
+
+      fetchMembers();
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (

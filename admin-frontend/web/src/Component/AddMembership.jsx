@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import CommonEdit from "./CommonEdit";
 import dumbbell from "../assets/icons/dumbbell.png";
 
@@ -12,7 +11,6 @@ const Add = ({
   errorMessage,
   prevData = null,
 }) => {
-  const navigate = useNavigate();
   const [membershipData, setMembershipData] = useState({
     membership_name: prevData?.membership_name || "",
     plan_type: prevData?.plan_type || "Daily",

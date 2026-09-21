@@ -42,8 +42,9 @@ const WorkoutCrud = ({
       }
     }
 
-    workoutData.id = updateData.id;
-    save(workoutData);
+    // Send a copy: assigning to `workoutData` would mutate React state directly,
+    // and the added `id` would then trip the "is required" check on the next click.
+    save({ ...workoutData, id: updateData.id });
     setErrorMessage("");
   };
 

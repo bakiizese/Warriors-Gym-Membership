@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import AppGradient from "../Component/AppGradient";
-import { useNavigate } from "react-router-dom";
 import SearchAndFilter from "../Component/SearchAndFilter";
 import ApiClient from "../utils/ApiClient";
 
@@ -8,36 +7,6 @@ const AttendanceLogs = () => {
   const [attendanceLog, setAttendanceLog] = useState([]);
   const [filteredAttendanceLog, setfilteredAttendanceLog] = useState([]);
   const filterSelections = ["Member Id", "Name", "Gender", "Date", "Check In"];
-
-  useEffect(() => {
-    offlineData();
-    fetchAttendance();
-  }, []);
-
-  const offlineData = () => {
-    const attendances = localStorage.getItem("attendances");
-    if (attendances) {
-      setAttendanceLog(JSON.parse(attendances));
-      search(filterSelections[0], true, JSON.parse(attendances));
-    }
-  };
-
-  const fetchAttendance = async () => {
-    const token = localStorage.getItem("adminToken");
-    try {
-      const res = await ApiClient.get("/admin/attendanceLog", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      localStorage.setItem(
-        "attendances",
-        JSON.stringify(res.data.attendanceLog),
-      );
-      setAttendanceLog(res.data.attendanceLog);
-      search(filterSelections[0], true, res.data.attendanceLog);
-    } catch (err) {
-      console.log(err);
-    }
-  };
 
   const formatDate = (createdAt, onlyTime = false) => {
     const date = new Date(createdAt);
@@ -114,6 +83,37 @@ const AttendanceLogs = () => {
 
     setfilteredAttendanceLog(sorted);
   };
+
+  const offlineData = () => {
+    const attendances = localStorage.getItem("attendances");
+    if (attendances) {
+      setAttendanceLog(JSON.parse(attendances));
+      search(filterSelections[0], true, JSON.parse(attendances));
+    }
+  };
+
+  const fetchAttendance = async () => {
+    const token = localStorage.getItem("adminToken");
+    try {
+      const res = await ApiClient.get("/admin/attendanceLog", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.setItem(
+        "attendances",
+        JSON.stringify(res.data.attendanceLog),
+      );
+      setAttendanceLog(res.data.attendanceLog);
+      search(filterSelections[0], true, res.data.attendanceLog);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: show the cached copy from localStorage at once, then refresh from the API
+    offlineData();
+    fetchAttendance();
+  }, []);
 
   return (
     <AppGradient>

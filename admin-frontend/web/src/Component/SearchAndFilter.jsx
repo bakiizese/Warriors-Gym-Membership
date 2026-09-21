@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { IoSearch, IoFilter } from "react-icons/io5";
 
 const SearchAndFilter = ({ filterSelections, search }) => {
