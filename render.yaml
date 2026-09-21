@@ -11,7 +11,8 @@ services:
     runtime: docker
     plan: free
     region: frankfurt
-    rootDir: ./backend
+    # No rootDir: Render reads the two paths below relative to it, so setting it
+    # to backend made them resolve to backend/backend. Both are from the repo root.
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     # /ping never touches the database, so a sleeping Neon cannot fail the check.
