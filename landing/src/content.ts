@@ -22,7 +22,7 @@ export type PassKey = keyof typeof passes;
 export const stats = {
   apps: 3,
   endpoints: 44,
-  tests: 98,
+  tests: 99,
   ciChecks: 12,
 } as const;
 

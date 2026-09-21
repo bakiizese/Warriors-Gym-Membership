@@ -130,6 +130,10 @@ Ports, the database password and the JWT secret can be overridden with a `.env` 
 
 On a device or emulator the apps run natively; the containers above serve their browser builds (`npx expo export --platform web`). The API address is baked into that build, so to point it elsewhere rebuild with `EXPO_PUBLIC_ADDRESS` set.
 
+### Hosting the demo
+
+The API runs on Render, the database on Neon and the four web apps on Cloudflare Pages, all on free plans, deployed by GitHub Actions after CI passes on `main`. The setup steps are in [docs/deploy.md](docs/deploy.md).
+
 ### Android APKs
 
 Pushing a version tag builds both apps with Gradle on GitHub Actions and attaches them to a release:

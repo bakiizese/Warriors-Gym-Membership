@@ -1,0 +1,44 @@
+# Render Blueprint: the API on Render's free plan. Setup steps are in docs/deploy.md.
+#
+# Auto-deploy is off on purpose. The Deploy workflow (.github/workflows/deploy.yml)
+# triggers a deploy through the service's deploy hook, and only after CI has
+# passed on main. Free plan: the service sleeps after 15 minutes without traffic
+# and takes about a minute to wake, and its disk is wiped on every restart.
+
+services:
+  - type: web
+    name: warriors-gym-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    # /ping never touches the database, so a sleeping Neon cannot fail the check.
+    healthCheckPath: /ping
+    autoDeployTrigger: "off"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Neon's direct (non-pooled) connection string, with ?sslmode=require. You
+      # are asked for it when the Blueprint is created.
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # The four Cloudflare Pages sites. If you pick a different project prefix,
+      # change it here and in .github/workflows/deploy.yml.
+      - key: CORS_ORIGINS
+        value: https://warriors-gym.pages.dev,https://warriors-gym-admin-web.pages.dev,https://warriors-gym-admin-mobile.pages.dev,https://warriors-gym-member-mobile.pages.dev
+      - key: AUTO_MIGRATE
+        value: "true"
+      # Sample data, locked demo logins, and POST /demo/reset for the nightly job.
+      - key: DEMO_MODE
+        value: "true"
+      # 16+ characters. The same value goes into the DEMO_RESET_TOKEN GitHub secret.
+      - key: DEMO_RESET_TOKEN
+        sync: false

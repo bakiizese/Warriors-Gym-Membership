@@ -57,7 +57,8 @@ app.use("/uploads", express.static(uploadsRoot));
 app.use("/seed-assets", express.static(path.join(__dirname, "seed-assets")));
 app.use(apiLimiter);
 
-app.get("/ping", (req, res) => res.status(200).json({ ping: "success" }));
+// No database on purpose: keep-alive pings must not wake a sleeping Postgres.
+app.get("/ping", (req, res) => res.status(200).json({ ping: "success", commit: env.COMMIT }));
 
 app.get("/health", async (req, res) => {
   try {
