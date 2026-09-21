@@ -1,10 +1,10 @@
-import crypto from "crypto";
 import express from "express";
 import Member from "../models/Member.js";
 import Admin from "../models/Admin.js";
 import { env } from "../config/env.js";
 import { HttpError } from "../middleware/errors.js";
 import { hash_password, verify_password } from "../utils/password.js";
+import { safeEqual } from "../utils/safeEqual.js";
 import { gen_jwt_token, jwt_verify } from "../utils/jwt.js";
 
 const authRouter = express.Router();
@@ -37,12 +37,6 @@ function getModel(userType) {
   return classes[userType];
 }
 
-function safeEqual(a = "", b = "") {
-  const left = Buffer.from(String(a));
-  const right = Buffer.from(String(b));
-  return left.length === right.length && crypto.timingSafeEqual(left, right);
-}
-
 function parseBody(req) {
   if (!req.body?.metadata) return req.body ?? {};
   try {
@@ -52,8 +46,9 @@ function parseBody(req) {
   }
 }
 
-export async function signUp(req, res) {
-  const userType = req.params.userType;
+// `userType` is explicit so the admin "add member" route can reuse this for
+// members without touching req.params.
+export async function signUp(req, res, userType = req.params.userType) {
   const Model = getModel(userType);
 
   // Anyone may register as a member, but admin accounts need the invite code.
@@ -111,7 +106,7 @@ export async function signUp(req, res) {
   return res.status(201).json({ user: "user created successfuly" });
 }
 
-authRouter.post("/sign-up/:userType", signUp);
+authRouter.post("/sign-up/:userType", (req, res) => signUp(req, res));
 
 authRouter.post("/sign-in/:userType", async (req, res) => {
   const userType = req.params.userType;

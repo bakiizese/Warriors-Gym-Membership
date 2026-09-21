@@ -1,12 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import app from "./app.js";
 import sequelize from "./config/database.js";
 import { env } from "./config/env.js";
 import { runMigrations } from "./config/migrator.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { uploadsRoot } from "./services/files.js";
+import { seedDemoData } from "./services/seed.js";
 
 async function start() {
   await sequelize.authenticate();
@@ -16,9 +15,15 @@ async function start() {
     await runMigrations();
   }
 
+  if (env.DEMO_MODE) {
+    // No-op unless the database is empty, so restarts never touch live demo data.
+    const result = await seedDemoData();
+    console.log(result.seeded ? "demo data seeded" : "demo data already present");
+  }
+
   // Uploads are git-ignored, so the folders must exist before multer writes.
   for (const dir of ["images", "videos"]) {
-    fs.mkdirSync(path.join(__dirname, "uploads", dir), { recursive: true });
+    fs.mkdirSync(path.join(uploadsRoot, dir), { recursive: true });
   }
 
   const server = app.listen(env.PORT, env.HOST, () =>

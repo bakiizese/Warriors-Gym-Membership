@@ -3,6 +3,8 @@ import app from "../app.js";
 import sequelize from "../config/database.js";
 import Admin from "../models/Admin.js";
 import Member from "../models/Member.js";
+import Membership from "../models/Membership.js";
+import MembershipPlan from "../models/MembershipPlan.js";
 import { hash_password } from "../utils/password.js";
 
 export const api = () => request(app);
@@ -55,6 +57,40 @@ export async function createMember(overrides = {}) {
     password: await hash_password(overrides.password ?? memberCreds.password),
   });
 }
+
+export async function createPlan(overrides = {}) {
+  return MembershipPlan.create({
+    membership_name: "Monthly",
+    plan_type: "Daily",
+    duration_days: 30,
+    fee: 1000,
+    description: "Test plan",
+    status: "Active",
+    ...overrides,
+  });
+}
+
+export async function createMembership(member, plan, overrides = {}) {
+  const start = new Date();
+  return Membership.create({
+    member_id: member.id,
+    membership_plan_id: plan.id,
+    start_date: start.toISOString(),
+    end_date: new Date(start.getTime() + plan.duration_days * DAY).toISOString(),
+    ticket: plan.ticket_amount ?? null,
+    status: "Active",
+    ...overrides,
+  });
+}
+
+export const DAY = 24 * 60 * 60 * 1000;
+export const daysFromNow = (days) => new Date(Date.now() + days * DAY);
+
+// The admin forms send DD-MM-YYYY.
+export const ddmmyyyy = (date) =>
+  [date.getDate(), date.getMonth() + 1, date.getFullYear()]
+    .map((n) => String(n).padStart(2, "0"))
+    .join("-");
 
 export async function signIn(userType, creds) {
   const res = await api().post(`/auth/sign-in/${userType}`).send(creds);

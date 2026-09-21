@@ -1,919 +1,567 @@
 import express from "express";
-import Member from "../models/Member.js";
-import MembershipPlan from "../models/MembershipPlan.js";
-import Admin from "../models/Admin.js";
-import { admin_auth } from "../middleware/auth.js";
-import { signUp } from "./auth_route.js";
-import Membership from "../models/Membership.js";
 import { Op } from "sequelize";
+import sequelize from "../config/database.js";
+import { isDemoLocked } from "../config/demo.js";
+import Admin from "../models/Admin.js";
 import AttendanceLog from "../models/AttendanceLog.js";
-import WorkoutPlan from "../models/WorkoutPlan.js";
-import { uploadFields } from "../utils/upload.js";
-import Video from "../models/Video.js";
-import fs from "fs";
-import path from "path";
-import TransactionHistory from "../models/TransactionHistory.js";
-import { membershipCalculate } from "../utils/logic.js";
-import { addDays } from "date-fns";
+import Member from "../models/Member.js";
+import Membership from "../models/Membership.js";
+import MembershipPlan from "../models/MembershipPlan.js";
 import Program from "../models/Program.js";
-import { gen_jwt_token } from "../utils/jwt.js";
-import { verify_password, hash_password } from "../utils/password.js";
+import TransactionHistory from "../models/TransactionHistory.js";
+import Video from "../models/Video.js";
+import WorkoutPlan from "../models/WorkoutPlan.js";
+import { admin_auth } from "../middleware/auth.js";
+import { HttpError } from "../middleware/errors.js";
+import {
+  cleanupOnError,
+  removeUpload,
+  uploadedPath,
+} from "../services/files.js";
+import {
+  LIVE_STATUSES,
+  renewMembership,
+  resolveStatus,
+  startMembership,
+} from "../services/membership.js";
+import { updateProfile, withoutPassword } from "../services/profile.js";
+import { groupWorkoutsByType } from "../services/workouts.js";
+import { membershipCalculate } from "../utils/logic.js";
+import {
+  parseDayMonthYear,
+  parseMetadata,
+  pick,
+  requireInt,
+  requireUuid,
+} from "../utils/request.js";
+import { uploadFields } from "../utils/upload.js";
+import { signUp } from "./auth_route.js";
 
 const adminRouter = express.Router();
 
-const membershipKeys = [
+// admin_auth always runs before uploadFields: multer writes to disk as soon as
+// it parses the body, so an unauthenticated request must never reach it.
+
+const PLAN_FIELDS = [
   "membership_name",
   "plan_type",
+  "ticket_amount",
+  "duration_days",
   "fee",
   "description",
   "status",
 ];
+const PLAN_REQUIRED = [
+  "membership_name",
+  "plan_type",
+  "fee",
+  "duration_days",
+  "status",
+];
+const WORKOUT_FIELDS = [
+  "workout_title",
+  "workout_type",
+  "workout_level",
+  "workout_rep",
+  "workout_sets",
+  "workout_break",
+];
+
+function assertPlanNumbers(data) {
+  const rules = { fee: 0, duration_days: 1, ticket_amount: 1 };
+  for (const [key, min] of Object.entries(rules)) {
+    if (data[key] === undefined || data[key] === null) continue;
+    const value = Number(data[key]);
+    if (!Number.isInteger(value) || value < min) {
+      throw new HttpError(400, `${key} must be a whole number of at least ${min}`);
+    }
+  }
+}
 
 //self
 adminRouter.get("/me", admin_auth, async (req, res) => {
-  try {
-    const adminId = req.adminId;
-    const userData = await Admin.findOne({ where: { id: adminId } });
-    if (!userData) {
-      return res.status(404).json({ error: "user not found" });
-    }
-    return res.status(200).json({ user: userData });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
+  const user = await Admin.findByPk(req.adminId);
+  if (!user) {
+    throw new HttpError(404, "user not found");
   }
+  return res.status(200).json({ user });
 });
 
-// adminRouter.put("/picture", uploadFields, admin_auth, async (req, res) => {
-//   try {
-//     let filePath = "";
-//     if (req.files && req.files.file) {
-//       if (req.files.file[0]?.path) {
-//         filePath = req.files.file[0]?.path;
-//       }
-//     }
-//     const adminId = req.adminId;
-//     const admin = await Admin.findOne({ where: { id: adminId } });
-//     if (admin.image && filePath) {
-//       fs.unlink(admin["image"], (err) => {
-//         if (err) {
-//           console.log("unable to remove image");
-//         } else {
-//           console.log("image removed successfully");
-//           admin["image"] = null;
-//         }
-//       });
-//     }
-//     if (typeof filePath === "string" && filePath) {
-//       admin["image"] = filePath;
-//     }
-//     admin.save();
-//     return res.status(200).json({ admin: "successfully updated" });
-//   } catch (err) {
-//     console.log(err);
-//     return res.status(500).json({ error: err });
-//   }
-// });
-
-adminRouter.put("/profile", uploadFields, admin_auth, async (req, res) => {
-  console.log("update");
-  try {
-    let filePath = "";
-    if (req.files && req.files.file) {
-      if (req.files.file[0]?.path) {
-        filePath = req.files.file[0]?.path;
-      }
-    }
-
-    const adminId = req.adminId;
-    const updateData = JSON.parse(req.body.metadata);
-    const user = await Admin.scope("withPassword").findOne({
-      where: { id: adminId },
+adminRouter.put(
+  "/profile",
+  admin_auth,
+  uploadFields,
+  cleanupOnError(async (req, res) => {
+    const updateData = parseMetadata(req);
+    const user = await Admin.scope("withPassword").findByPk(req.adminId);
+    const { token } = await updateProfile({
+      Model: Admin,
+      role: "admin",
+      user,
+      updateData,
+      filePath: uploadedPath(req),
+      selfService: true,
     });
-    for (const key in updateData) {
-      if (
-        ![
-          "id",
-          "createdAt",
-          "updatedAt",
-          "oldPassword",
-          "confirmPassword",
-          "password",
-          "phone_number",
-          "image",
-          "activity_status",
-        ].includes(key)
-      ) {
-        if (user[key]) {
-          user[key] = updateData[key];
-        }
-      }
+    if (token) {
+      return res.status(200).json({ token, user: withoutPassword(user) });
     }
-    if (user.image && filePath) {
-      fs.unlink(user["image"], (err) => {
-        if (err) {
-          console.log("unable to remove image");
-        } else {
-          console.log("image removed successfully");
-          user["image"] = null;
-        }
-      });
-    }
-
-    if (typeof filePath === "string" && filePath) {
-      user["image"] = filePath;
-    }
-    if (updateData["oldPassword"] && updateData["oldPassword"] !== "") {
-      const checkPassword = await verify_password(
-        updateData["oldPassword"],
-        user.password,
-      );
-      if (!checkPassword) {
-        return res.status(400).json({ error: "incorrect oldPassword" });
-      }
-      const hash = await hash_password(updateData["password"]);
-      user.password = hash;
-    }
-    if (
-      updateData["phone_number"] &&
-      updateData["phone_number"] !== user.phone_number
-    ) {
-      const userCheck = await Admin.findOne({
-        where: { phone_number: updateData["phone_number"] },
-      });
-      if (userCheck) {
-        return res.status(400).json({ error: "phone number exists" });
-      }
-      const newToken = gen_jwt_token({
-        id: user.id,
-        phone_number: updateData["phone_number"],
-      });
-
-      user.phone_number = updateData["phone_number"];
-      user.save();
-      return res.status(200).json({ token: newToken, user: user });
-    }
-    user.save();
     return res.status(200).json({ user: "successfully updated" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
-});
+  }),
+);
 
 //members
-//this will be handled by auth_route
-adminRouter.post("/addMember", uploadFields, admin_auth, async (req, res) => {
-  req.params.userType = "member";
-  let filePath = "";
-  if (req?.files && req?.files?.file) {
-    if (req.files?.file[0]?.path) {
-      filePath = req.files?.file[0]?.path;
-    }
-  }
-  if (typeof filePath === "string" && filePath) {
-    req.imageFile = filePath;
-  }
-  return signUp(req, res);
-});
+adminRouter.post(
+  "/addMember",
+  admin_auth,
+  uploadFields,
+  cleanupOnError(async (req, res) => {
+    req.imageFile = uploadedPath(req) || undefined;
+    return signUp(req, res, "member");
+  }),
+);
 
-adminRouter.put("/updateMember", uploadFields, admin_auth, async (req, res) => {
-  try {
-    let filePath = "";
-    if (req?.files && req?.files?.file) {
-      if (req.files?.file[0]?.path) {
-        filePath = req.files?.file[0]?.path;
-      }
+adminRouter.put(
+  "/updateMember",
+  admin_auth,
+  uploadFields,
+  cleanupOnError(async (req, res) => {
+    const updateData = parseMetadata(req);
+    const member = await Member.findByPk(requireInt(updateData.id, "member id"));
+    if (!member) {
+      throw new HttpError(404, "member not found");
     }
-
-    const updateData = JSON.parse(req.body.metadata);
-    const memberId = updateData.id;
-    const user = await Member.findOne({ where: { id: memberId } });
-    for (const key in updateData) {
-      if (
-        ![
-          "id",
-          "createdAt",
-          "updatedAt",
-          "oldPassword",
-          "confirmPassword",
-          "password",
-          "phone_number",
-          "image",
-          "activity_status",
-        ].includes(key)
-      ) {
-        if (user[key]) {
-          user[key] = updateData[key];
-        }
-      }
-    }
-    if (user.image && filePath) {
-      fs.unlink(user["image"], (err) => {
-        if (err) {
-          console.log("unable to remove image");
-        } else {
-          console.log("image removed successfully");
-          user["image"] = null;
-        }
-      });
-    }
-
-    if (typeof filePath === "string" && filePath) {
-      user["image"] = filePath;
-    }
-
-    if (
-      updateData["phone_number"] &&
-      updateData["phone_number"] !== user.phone_number
-    ) {
-      const userCheck = await Member.findOne({
-        where: { phone_number: updateData["phone_number"] },
-      });
-      if (userCheck) {
-        return res.status(400).json({ error: "phone number exists" });
-      }
-      const newToken = gen_jwt_token({
-        id: user.id,
-        phone_number: updateData["phone_number"],
-      });
-
-      user.phone_number = updateData["phone_number"];
-      user.save();
-      return res.status(200).json({ token: newToken, user: user });
-    }
-    user.save();
+    await updateProfile({
+      Model: Member,
+      role: "member",
+      user: member,
+      updateData,
+      filePath: uploadedPath(req),
+      selfService: false,
+    });
     return res.status(200).json({ user: "successfully updated" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
-});
+  }),
+);
 
 adminRouter.get("/members", admin_auth, async (req, res) => {
-  try {
-    const members = await Member.findAll({
+  const members = await Member.findAll({
+    include: {
+      model: Membership,
       include: {
-        model: Membership,
-        include: {
-          model: MembershipPlan,
-          as: "membershipPlan",
-          attributes: ["membership_name"],
-        },
-        attributes: ["membership_plan_id"],
-        as: "membership",
+        model: MembershipPlan,
+        as: "membershipPlan",
+        attributes: ["membership_name"],
       },
-    });
+      attributes: ["membership_plan_id"],
+      as: "membership",
+    },
+  });
 
-    const uniqueMembers = Array.from(
-      new Map(members.map((m) => [m.id, m])).values(),
-    );
-    return res.status(200).json({ members: uniqueMembers });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  const uniqueMembers = Array.from(
+    new Map(members.map((m) => [m.id, m])).values(),
+  );
+  return res.status(200).json({ members: uniqueMembers });
 });
 
 adminRouter.delete("/member/:memberId", admin_auth, async (req, res) => {
-  try {
-    const memberId = req.params.memberId;
-    const member = await Member.findOne({ where: { id: memberId } });
-    if (member.image) {
-      fs.unlink(member.image, (err) => {
-        if (err) {
-          console.log("unable to delete image");
-        } else {
-          console.log("image deleted");
-        }
-      });
-    }
-    await member.destroy();
-    return res.status(200).json({ member: "removed successfuly" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
+  const member = await Member.findByPk(requireInt(req.params.memberId, "member id"));
+  if (!member) {
+    throw new HttpError(404, "member not found");
   }
+  if (isDemoLocked(member)) {
+    throw new HttpError(403, "the demo member account cannot be deleted");
+  }
+  await member.destroy();
+  await removeUpload(member.image);
+  return res.status(200).json({ member: "removed successfuly" });
 });
 
 adminRouter.get("/members_status", admin_auth, async (req, res) => {
-  try {
-    const activeMembers = await Member.count({
-      where: { activity_status: "Active" },
-    });
-    const paymentDueMembers = await Member.count({
-      where: { activity_status: "Payment Due" },
-    });
+  const activeMembers = await Member.count({
+    where: { activity_status: "Active" },
+  });
+  const paymentDueMembers = await Member.count({
+    where: { activity_status: "Payment Due" },
+  });
 
-    return res.status(200).json({
-      members_status: {
-        activeMembers: activeMembers,
-        paymentDueMembers: paymentDueMembers,
-      },
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  return res.status(200).json({
+    members_status: { activeMembers, paymentDueMembers },
+  });
 });
 
 //membershipPlan
 adminRouter.get("/membership_plans", admin_auth, async (req, res) => {
-  try {
-    const membershipPlans = await MembershipPlan.findAll({
-      include: [
-        {
-          model: Membership,
-          as: "memberships",
-          required: false,
-          where: { status: { [Op.in]: ["Active", "Payment Due"] } },
-        },
-      ],
-    });
-    return res.status(200).json({ membershipPlan: membershipPlans });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  const membershipPlans = await MembershipPlan.findAll({
+    include: [
+      {
+        model: Membership,
+        as: "memberships",
+        required: false,
+        where: { status: { [Op.in]: LIVE_STATUSES } },
+      },
+    ],
+  });
+  return res.status(200).json({ membershipPlan: membershipPlans });
 });
 
 adminRouter.post("/membership_plan", admin_auth, async (req, res) => {
-  try {
-    const membershipData = req.body;
-    for (const key of membershipKeys) {
-      if (!membershipData[key]) {
-        if (key === "ticket_amount") {
-          if (membershipData["plan_type"] === "Ticket") {
-            console.log(key, "is missing");
-            return res.status(400).json({ error: `${key} is missing` });
-          }
-        }
-        console.log(key, "is missing");
-        return res.status(400).json({ error: `${key} is missing` });
-      }
+  const data = pick(req.body, PLAN_FIELDS);
+  const required =
+    data.plan_type === "Ticket" ? [...PLAN_REQUIRED, "ticket_amount"] : PLAN_REQUIRED;
+  for (const key of required) {
+    if (data[key] === undefined || data[key] === "") {
+      throw new HttpError(400, `${key} is missing`);
     }
-    await MembershipPlan.create(membershipData);
-    return res
-      .status(201)
-      .json({ membership: "membership successfuly created" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
   }
+  assertPlanNumbers(data);
+
+  await MembershipPlan.create(data);
+  return res.status(201).json({ membership: "membership successfuly created" });
 });
 
-adminRouter.put(
-  "/membership_plan/:membershipId",
-  admin_auth,
-  async (req, res) => {
-    try {
-      const membershipId = req.params.membershipId;
-      const updateData = req.body;
-      const membership = await MembershipPlan.findOne({
-        where: { id: membershipId },
-      });
-      if (!membership) {
-        return res.status(404).json({ error: "membership not found" });
-      }
-      for (const key in updateData) {
-        if (!["id", "createdAt", "updatedAt"].includes(key)) {
-          if (membership[key]) {
-            membership[key] = updateData[key];
-          }
-        }
-      }
-      membership.save();
-      return res
-        .status(200)
-        .json({ membership: "membership updated successfuly" });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ error: err });
-    }
-  },
-);
+adminRouter.put("/membership_plan/:membershipId", admin_auth, async (req, res) => {
+  const plan = await MembershipPlan.findByPk(
+    requireUuid(req.params.membershipId, "membership id"),
+  );
+  if (!plan) {
+    throw new HttpError(404, "membership not found");
+  }
 
-adminRouter.delete(
-  "/membership_plan/:membershipId",
-  admin_auth,
-  async (req, res) => {
-    try {
-      const membershipId = req.params.membershipId;
-      if (!membershipId) {
-        return res.status(400).json({ error: "invalid id" });
-      }
-      await MembershipPlan.destroy({ where: { id: membershipId } });
-      return res
-        .status(200)
-        .json({ membership: "membership deleted successfully" });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ error: err });
-    }
-  },
-);
+  const updates = pick(req.body, PLAN_FIELDS);
+  assertPlanNumbers(updates);
+  plan.set(updates);
+  await plan.save();
+  return res.status(200).json({ membership: "membership updated successfuly" });
+});
+
+adminRouter.delete("/membership_plan/:membershipId", admin_auth, async (req, res) => {
+  const id = requireUuid(req.params.membershipId, "membership id");
+
+  // memberships.membership_plan_id cascades, so deleting a plan that anyone
+  // ever bought would silently erase their membership history.
+  const inUse = await Membership.count({ where: { membership_plan_id: id } });
+  if (inUse > 0) {
+    throw new HttpError(
+      409,
+      "plan has memberships; set its status to inactive instead of deleting it",
+    );
+  }
+  const deleted = await MembershipPlan.destroy({ where: { id } });
+  if (!deleted) {
+    throw new HttpError(404, "membership not found");
+  }
+  return res.status(200).json({ membership: "membership deleted successfully" });
+});
 
 //attendance
 adminRouter.get("/attendanceLog", admin_auth, async (req, res) => {
-  try {
-    const attendanceLog = await AttendanceLog.findAll({
-      limit: 100,
-      order: [["createdAt", "DESC"]],
-      include: { model: Member, as: "attendanceMember" },
-    });
-    return res.status(200).json({ attendanceLog: attendanceLog });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  const attendanceLog = await AttendanceLog.findAll({
+    limit: 100,
+    order: [["createdAt", "DESC"]],
+    include: { model: Member, as: "attendanceMember" },
+  });
+  return res.status(200).json({ attendanceLog });
 });
 
 adminRouter.get("/attendanceLog/today", admin_auth, async (req, res) => {
-  try {
-    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 100);
-    const count = await AttendanceLog.count({
-      where: {
-        createdAt: {
-          [Op.gte]: last24Hours,
-        },
-      },
-    });
-    return res.status(200).json({ attendanceCount: count });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const count = await AttendanceLog.count({
+    where: { createdAt: { [Op.gte]: last24Hours } },
+  });
+  return res.status(200).json({ attendanceCount: count });
 });
 
-adminRouter.post(
-  "/memberAttendance/:memberId",
-  admin_auth,
-  async (req, res) => {
-    try {
-      const memberId = Number(req.params.memberId);
-      if (!memberId) {
-        return res.status(400).json({ error: `error in ${memberId}` });
-      }
-      const member = await Member.findOne({
-        where: { id: memberId },
-        include: { model: Membership, as: "membership", required: false },
-      });
-      if (!member) {
-        return res.status(404).json({ error: "member not found" });
-      }
-      if (!member.membership) {
-        return res.status(404).json({ error: "membership not created" });
-      }
-      const checkIn = new Date();
-      // const checkIn = new Date("2026-02-22T06:53:06.709Z");
-      const attendanceData = {
-        member_id: member.id,
-        membership_id: member.membership.id,
-        check_in: String(checkIn),
-      };
-      const checkAttendance = await AttendanceLog.findAll({
-        where: { member_id: member.id, membership_id: member.membership.id },
-      });
-      if (checkAttendance.length > 0) {
-        const prevCheckIn =
-          checkAttendance[checkAttendance.length - 1]?.check_in;
-        const prevCheckInDate = new Date(prevCheckIn);
-        const subs = Math.abs(checkIn - prevCheckInDate) / (1000 * 60 * 60);
-        if (subs < 23) {
-          return res.status(400).json({ error: "already attended today" });
-        }
-      }
+adminRouter.post("/memberAttendance/:memberId", admin_auth, async (req, res) => {
+  const memberId = requireInt(req.params.memberId, "member id");
+  const member = await Member.findByPk(memberId);
+  if (!member) {
+    throw new HttpError(404, "member not found");
+  }
 
-      const attendance = await AttendanceLog.create(attendanceData);
-      attendance["full_name"] = member.full_name;
+  const membership = await Membership.findOne({
+    where: { member_id: memberId, status: { [Op.in]: LIVE_STATUSES } },
+    order: [["createdAt", "DESC"]],
+    include: { model: MembershipPlan, as: "membershipPlan", required: true },
+  });
+  if (!membership) {
+    throw new HttpError(404, "membership not found");
+  }
 
-      const membership = await Membership.findOne({
-        where: {
-          member_id: memberId,
-          status: { [Op.in]: ["Active", "Payment Due"] },
-        },
-        include: {
-          model: MembershipPlan,
-          as: "membershipPlan",
-          required: true,
-        },
-      });
-      if (!membership) {
-        return res.status(404).json({ error: "membership not found" });
-      }
-      const membershipCal = membershipCalculate(membership, memberId);
-
-      if (membership.membershipPlan.plan_type === "Ticket") {
-        if (membershipCal.remainingTicket < 0) {
-          member.activity_status = "Inactive";
-          membership.status = "Inactive";
-        } else if (membershipCal.remainingTicket < 3) {
-          member.activity_status = "Payment Due";
-          membership.status = "Payment Due";
-        }
-      }
-
-      if (membershipCal.daysLeft < 0) {
-        member.activity_status = "Inactive";
-        membership.status = "Inactive";
-      } else if (membershipCal.daysLeft < 5) {
-        member.activity_status = "Payment Due";
-        membership.status = "Payment Due";
-      }
-
-      member.save();
-      membership.save();
-
-      return res
-        .status(200)
-        .json({ attendance: [attendance, { full_name: member.full_name }] });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ error: err });
+  const checkIn = new Date();
+  const previous = await AttendanceLog.findOne({
+    where: { member_id: memberId, membership_id: membership.id },
+    order: [["createdAt", "DESC"]],
+  });
+  if (previous) {
+    const hoursSince = (checkIn - new Date(previous.check_in)) / (1000 * 60 * 60);
+    if (hoursSince < 23) {
+      throw new HttpError(400, "already attended today");
     }
-  },
-);
+  }
+
+  const attendance = await sequelize.transaction(async (transaction) => {
+    const log = await AttendanceLog.create(
+      {
+        member_id: memberId,
+        membership_id: membership.id,
+        check_in: checkIn.toISOString(),
+      },
+      { transaction },
+    );
+
+    // Counted after the insert, so this check-in already uses up a ticket.
+    const calc = await membershipCalculate(membership, memberId, { transaction });
+    const status = resolveStatus(calc, membership.membershipPlan.plan_type);
+    membership.status = status;
+    member.activity_status = status;
+    await membership.save({ transaction });
+    await member.save({ transaction });
+    return log;
+  });
+
+  return res
+    .status(200)
+    .json({ attendance: [attendance, { full_name: member.full_name }] });
+});
 
 //workoutPlan
 adminRouter.get("/workout/:workoutType", admin_auth, async (req, res) => {
-  try {
-    const workoutType = req.params.workoutType;
-    const workout = await WorkoutPlan.findAll({
-      where: { workout_type: workoutType },
-      include: { model: Video, as: "video" },
-    });
-
-    if (!workout) {
-      return res.status(200).json({ workout: [] });
-    }
-    const sorted = workout.reduce((acc, workout) => {
-      const key = workout.workout_type;
-
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(workout);
-      return acc;
-    }, {});
-
-    return res.status(200).json({ workout: sorted });
-  } catch (err) {
-    return res.status(500).json({ error: err });
-  }
+  const workouts = await WorkoutPlan.findAll({
+    where: { workout_type: req.params.workoutType },
+    include: { model: Video, as: "video" },
+  });
+  return res.status(200).json({ workout: await groupWorkoutsByType(workouts) });
 });
 
 adminRouter.get("/workouts", admin_auth, async (req, res) => {
-  try {
-    const workoutPlans = await WorkoutPlan.findAll({
-      include: { model: Video, as: "video" },
-    });
-    const len = workoutPlans.length;
-    const sorted = workoutPlans.reduce((acc, workout) => {
-      const key = workout.workout_type;
-      const videoPath = path.resolve(workout.video.path);
-      const stats = fs.statSync(videoPath);
-      workout.video.dataValues.size = stats.size;
-
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(workout);
-      return acc;
-    }, {});
-    return res.status(200).json({ workoutPlan: sorted, length: len });
-  } catch (err) {
-    return res.status(500).json({ error: err });
-  }
+  const workoutPlans = await WorkoutPlan.findAll({
+    include: { model: Video, as: "video" },
+  });
+  return res.status(200).json({
+    workoutPlan: await groupWorkoutsByType(workoutPlans, { withSizes: true }),
+    length: workoutPlans.length,
+  });
 });
 
-adminRouter.post("/workout", uploadFields, admin_auth, async (req, res) => {
-  try {
-    let filePath = "";
-    if (req.files && req.files.file) {
-      if (req.files.file[0]?.path) {
-        filePath = req.files.file[0]?.path;
-      }
+function assertWorkoutNumbers(data) {
+  for (const key of ["workout_rep", "workout_sets"]) {
+    if (data[key] === undefined) continue;
+    const value = Number(data[key]);
+    if (!Number.isInteger(value) || value < 1) {
+      throw new HttpError(400, `${key} must be a whole number of at least 1`);
     }
-    if (!filePath) {
-      return res.status(400).json({ error: "video missing" });
-    }
-    const workoutKeys = [
-      "workout_title",
-      "workout_type",
-      "workout_level",
-      "workout_rep",
-      "workout_sets",
-      "workout_break",
-    ];
-    const workoutData = JSON.parse(req.body.metadata);
-    for (const key of workoutKeys) {
-      if (!workoutData[key]) {
-        return res.status(400).json({ error: `${key} missing` });
-      }
-    }
-
-    const video = await Video.create({ path: filePath });
-
-    if (!video) {
-      return res.status(500).json({ error: "video unable to create" });
-    }
-
-    workoutData["video_id"] = video.id;
-
-    const newWorkoutPlan = await WorkoutPlan.create(workoutData);
-    if (!newWorkoutPlan) {
-      return res.status(500).json({ error: "unable to create workoutPlan" });
-    }
-    return res.status(201).json({ workoutPlan: "workout created successfuly" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
   }
-});
+}
 
-adminRouter.delete(
-  "/workoutRemove/:workoutId",
+adminRouter.post(
+  "/workout",
   admin_auth,
-  async (req, res) => {
-    try {
-      const workoutId = req.params.workoutId;
-      const workout = await WorkoutPlan.findOne({
-        where: { id: workoutId },
-        include: { model: Video, as: "video" },
-      });
-
-      if (!workout) {
-        return res.status(404).json({ error: "workout not found" });
-      }
-      await Video.destroy({ where: { id: workout.video_id } });
-      if (workout?.video?.path) {
-        fs.unlink(workout.video.path, (err) => {
-          if (err) {
-            console.log("Error deleting video");
-          } else {
-            console.log("video deleted Successfuly");
-          }
-        });
-      }
-      workout.destroy();
-
-      return res.status(200).json({ workout: "workout deleted successfuly" });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ error: err });
+  uploadFields,
+  cleanupOnError(async (req, res) => {
+    const file = req.files?.file?.[0];
+    if (!file) {
+      throw new HttpError(400, "video missing");
     }
-  },
+    if (!file.mimetype.startsWith("video/")) {
+      throw new HttpError(400, "file must be a video");
+    }
+
+    const data = pick(parseMetadata(req), WORKOUT_FIELDS);
+    for (const key of WORKOUT_FIELDS) {
+      if (!data[key]) {
+        throw new HttpError(400, `${key} missing`);
+      }
+    }
+    assertWorkoutNumbers(data);
+
+    await sequelize.transaction(async (transaction) => {
+      const video = await Video.create({ path: uploadedPath(req) }, { transaction });
+      await WorkoutPlan.create({ ...data, video_id: video.id }, { transaction });
+    });
+    return res.status(201).json({ workoutPlan: "workout created successfuly" });
+  }),
 );
+
+adminRouter.delete("/workoutRemove/:workoutId", admin_auth, async (req, res) => {
+  const workout = await WorkoutPlan.findByPk(
+    requireUuid(req.params.workoutId, "workout id"),
+    { include: { model: Video, as: "video" } },
+  );
+  if (!workout) {
+    throw new HttpError(404, "workout not found");
+  }
+
+  await sequelize.transaction(async (transaction) => {
+    await workout.destroy({ transaction });
+    if (workout.video) {
+      await workout.video.destroy({ transaction });
+    }
+  });
+  await removeUpload(workout.video?.path);
+
+  return res.status(200).json({ workout: "workout deleted successfuly" });
+});
 
 adminRouter.put(
   "/workoutUpdate",
-  uploadFields,
   admin_auth,
-  async (req, res) => {
-    try {
-      const video = req?.files?.file;
-      const updateKey = [
-        "workout_title",
-        "workout_type",
-        "workout_level",
-        "workout_rep",
-        "workout_sets",
-        "workout_break",
-      ];
+  uploadFields,
+  cleanupOnError(async (req, res) => {
+    const updateData = parseMetadata(req);
+    const workout = await WorkoutPlan.findByPk(
+      requireUuid(updateData.id, "workout id"),
+    );
+    if (!workout) {
+      throw new HttpError(404, "workout not found");
+    }
 
-      const jsonData = req.body;
-      const updateData = JSON.parse(jsonData.metadata);
-      const currentData = await WorkoutPlan.findOne({
-        where: { id: updateData.id },
-      });
+    const changes = pick(updateData, WORKOUT_FIELDS);
+    assertWorkoutNumbers(changes);
+    workout.set(changes);
 
-      for (const key of updateKey) {
-        if (updateData[key]) {
-          currentData[key] = updateData[key];
+    const newPath = uploadedPath(req);
+    let replacedPath;
+    await sequelize.transaction(async (transaction) => {
+      if (newPath) {
+        const video = workout.video_id
+          ? await Video.findByPk(workout.video_id, { transaction })
+          : null;
+        if (video) {
+          replacedPath = video.path;
+          video.path = newPath;
+          await video.save({ transaction });
+        } else {
+          const created = await Video.create({ path: newPath }, { transaction });
+          workout.video_id = created.id;
         }
       }
+      await workout.save({ transaction });
+    });
+    await removeUpload(replacedPath);
 
-      const currentVideo = await Video.findOne({
-        where: { id: currentData.video_id },
-      });
-
-      if (!currentVideo && video) {
-        const newVideo = await Video.create({ path: video[0].path });
-        currentData.video_id = newVideo.id;
-        console.log("newVideo created");
-      } else if (currentVideo && video) {
-        fs.unlink(currentVideo.path, (err) => {
-          if (err) {
-            console.log("Error deleting video");
-          } else {
-            console.log("video deleted Successfuly");
-          }
-        });
-        currentVideo.path = video[0].path;
-        currentVideo.save();
-        console.log("Video updated");
-      }
-      currentData.save();
-      return res.status(200).json({ workour: "workout updated successfuly" });
-    } catch (err) {
-      return res.status(500).json({ error: err });
-    }
-  },
+    return res.status(200).json({ workout: "workout updated successfuly" });
+  }),
 );
 
 //transaction
 adminRouter.get("/transactions", admin_auth, async (req, res) => {
-  try {
-    const transactions = await TransactionHistory.findAll({
-      include: [{ model: Member, as: "payer" }],
-      order: [["paid_at", "DESC"]],
-    });
-    return res.status(200).json({ transactions: transactions });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+  const transactions = await TransactionHistory.findAll({
+    include: [{ model: Member, as: "payer" }],
+    // paid_at is free text from a form, so it cannot be sorted reliably.
+    order: [["createdAt", "DESC"]],
+  });
+  return res.status(200).json({ transactions });
 });
 
 adminRouter.post("/transaction", admin_auth, async (req, res) => {
-  const transactionKeys = [
+  const body = req.body;
+  for (const key of [
     "payer_id",
     "membershipPlan_id",
     "payment_method",
     "amount",
     "payment_for",
     "paid_at",
-  ];
-  try {
-    const transactionData = req.body;
-    const adminName = req.adminName;
-    for (const key of transactionKeys) {
-      if (!transactionData[key]) {
-        return res.status(400).json({ error: `${key} missing` });
-      }
+  ]) {
+    if (!body[key]) {
+      throw new HttpError(400, `${key} missing`);
     }
+  }
+  const amount = Number(body.amount);
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new HttpError(400, "amount must be a whole number");
+  }
+  const paidAt = parseDayMonthYear(body.paid_at);
 
-    const payer = await Member.findOne({
-      where: { id: transactionData.payer_id },
-    });
-    if (!payer) {
-      return res
-        .status(400)
-        .json({ error: `${transactionData.payer_id} don't exist` });
-    }
-    const [day, month, year] = transactionData.paid_at.split("-");
-    const paid_at = new Date(year, month - 1, day);
-    if (transactionData.isNew) {
-      const start_date = new Date(paid_at);
-      const end_date = new Date(start_date);
+  const payer = await Member.findByPk(requireInt(body.payer_id, "payer_id"));
+  if (!payer) {
+    throw new HttpError(400, `${body.payer_id} don't exist`);
+  }
+  const plan = await MembershipPlan.findByPk(
+    requireUuid(body.membershipPlan_id, "membershipPlan_id"),
+  );
+  if (!plan) {
+    throw new HttpError(400, "membership plan not found");
+  }
 
-      end_date.setDate(
-        end_date.getDate() + Number(transactionData.duration_days),
-      );
-
-      const membershipCheck = await Membership.findAll({
-        where: {
-          member_id: transactionData.payer_id,
-          status: { [Op.in]: ["Active", "Payment Due"] },
-        },
-      });
-
-      if (membershipCheck.length > 0) {
-        for (const membership of membershipCheck) {
-          membership.status = "Inactive";
-          membership.save();
-        }
-      }
-
-      const newMembershipData = {
-        member_id: transactionData.payer_id,
-        membership_plan_id: transactionData.membershipPlan_id,
-        start_date: String(start_date),
-        end_date: String(end_date),
-        ticket: transactionData.ticket_amount,
-        status: "Active",
-      };
-      const membership = await Membership.create(newMembershipData);
-      if (!membership) {
-        return res.status(500).json({ error: "unable to create membership" });
-      }
+  await sequelize.transaction(async (transaction) => {
+    if (body.isNew) {
+      // Duration and ticket count come from the plan, never from the request.
+      await startMembership({ member: payer, plan, startDate: paidAt }, { transaction });
     } else {
-      if (!transactionData["membership_id"])
-        return res.status(400).json({ error: "membership id missing" });
+      if (!body.membership_id) {
+        throw new HttpError(400, "membership id missing");
+      }
       const membership = await Membership.findOne({
-        where: { id: transactionData.membership_id },
-        include: { model: MembershipPlan, as: "membershipPlan" },
+        where: {
+          id: requireUuid(body.membership_id, "membership id"),
+          member_id: payer.id,
+        },
+        include: { model: MembershipPlan, as: "membershipPlan", required: true },
+        transaction,
       });
-
       if (!membership) {
-        return res.status(500).json({ error: "unable to renew membership" });
+        throw new HttpError(404, "membership not found");
       }
-
-      const currentDate = new Date(paid_at);
-      const end_date = new Date(membership.end_date);
-
-      const base_date =
-        end_date > currentDate ? membership.end_date : currentDate;
-
-      membership.end_date = addDays(
-        base_date,
-        membership.membershipPlan.duration_days,
-      );
-      membership.end_date = membership.end_date.toISOString();
-
-      if (membership.membershipPlan.plan_type === "Ticket") {
-        membership.ticket =
-          membership.ticket + membership.membershipPlan.ticket_amount;
-      }
-      membership.status = "Active";
-      membership.save();
+      await renewMembership(membership, { paidAt }, { transaction });
     }
-
-    transactionData.payment_method =
-      transactionData.payment_method + "-" + adminName;
-
-    transactionData.paid_at = String(new Date(paid_at));
-    transactionData.status = "Successfull";
 
     payer.activity_status = "Active";
+    await payer.save({ transaction });
 
-    payer.save();
-    const transaction = await TransactionHistory.create(transactionData);
-    if (!transaction) {
-      return res.status(500).json({ error: "unable to create transaction" });
-    }
-    return res
-      .status(201)
-      .json({ transaction: "transaction created successfuly" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
+    await TransactionHistory.create(
+      {
+        payer_id: payer.id,
+        membershipPlan_id: plan.id,
+        payment_method: `${body.payment_method}-${req.adminName}`,
+        amount,
+        payment_for: body.payment_for,
+        paid_at: paidAt.toISOString(),
+        status: "Successfull",
+      },
+      { transaction },
+    );
+  });
+
+  return res.status(201).json({ transaction: "transaction created successfuly" });
 });
 
 //membership
 adminRouter.get("/membership/:memberId", admin_auth, async (req, res) => {
-  try {
-    const memberId = req.params.memberId;
-    const member = await Member.findOne({ where: { id: memberId } });
-    if (!member) {
-      return res.status(404).json({ error: "member not found" });
-    }
-    const membership = await Membership.findOne({
-      where: { member_id: memberId, status: "Active" },
-      include: { model: MembershipPlan, as: "membershipPlan" },
-    });
-
-    if (!membership) {
-      return res.status(404).json({ error: "membership not found" });
-    }
-    return res.status(200).json({ membership: membership });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
+  const memberId = requireInt(req.params.memberId, "member id");
+  const member = await Member.findByPk(memberId);
+  if (!member) {
+    throw new HttpError(404, "member not found");
   }
+  const membership = await Membership.findOne({
+    where: { member_id: memberId, status: "Active" },
+    include: { model: MembershipPlan, as: "membershipPlan" },
+  });
+  if (!membership) {
+    throw new HttpError(404, "membership not found");
+  }
+  return res.status(200).json({ membership });
 });
 
 //programs
 adminRouter.get("/programs", admin_auth, async (req, res) => {
-  try {
-    const programs = await Program.findAll({
-      limit: 50,
-      order: [["createdAt", "DESC"]],
-    });
-
-    return res.status(200).json({ programs: programs });
-  } catch (err) {
-    return res.status(500).json({ error: err });
-  }
+  const programs = await Program.findAll({
+    limit: 50,
+    order: [["createdAt", "DESC"]],
+  });
+  return res.status(200).json({ programs });
 });
 
 adminRouter.post("/programs", admin_auth, async (req, res) => {
-  try {
-    const programData = req.body;
-
-    if (!programData["content"]) {
-      return res.status(400).json({ error: "content missing" });
-    }
-    await Program.create({ ...programData });
-
-    return res.status(200).json({ programs: "program successfuly created" });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
+  if (!req.body?.content) {
+    throw new HttpError(400, "content missing");
   }
+  await Program.create({ content: req.body.content });
+  return res.status(200).json({ programs: "program successfuly created" });
 });
 
 adminRouter.delete("/programs/:id", admin_auth, async (req, res) => {
-  try {
-    const programId = req.params.id;
-
-    await Program.destroy({ where: { id: programId } });
-
-    return res.status(200).json({ programs: "deleted successfuly" });
-  } catch (err) {
-    return res.status(500).json({ error: err });
-  }
+  await Program.destroy({ where: { id: requireUuid(req.params.id, "program id") } });
+  return res.status(200).json({ programs: "deleted successfuly" });
 });
 
 export default adminRouter;

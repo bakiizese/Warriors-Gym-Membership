@@ -11,6 +11,8 @@
     "migrate": "node scripts/migrate.js up",
     "migrate:down": "node scripts/migrate.js down",
     "migrate:status": "node scripts/migrate.js status",
+    "seed": "node scripts/seed.js",
+    "seed:reset": "node scripts/seed.js --reset",
     "test": "vitest run",
     "lint": "eslint ."
   },

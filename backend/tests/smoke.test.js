@@ -10,7 +10,7 @@ describe("smoke", () => {
   it("reports healthy with the database up", async () => {
     const res = await request(app).get("/health");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: "ok", db: "up" });
+    expect(res.body).toEqual({ status: "ok", db: "up", demo: false });
   });
 
   it("migrations created every table in the isolated schema", async () => {

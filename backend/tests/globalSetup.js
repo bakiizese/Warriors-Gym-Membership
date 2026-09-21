@@ -1,4 +1,7 @@
 import crypto from "crypto";
+import fs from "fs";
+import os from "os";
+import path from "path";
 import pg from "pg";
 
 // Tests run against a throwaway schema inside a real Postgres, so the
@@ -10,6 +13,7 @@ const databaseUrl =
   "postgres://postname:password@localhost:5432/postdb";
 
 const schema = `test_${crypto.randomBytes(4).toString("hex")}`;
+const uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), "warriors-uploads-"));
 
 async function withClient(fn) {
   const client = new pg.Client({ connectionString: databaseUrl });
@@ -30,6 +34,8 @@ export async function setup() {
   process.env.DATABASE_SCHEMA = schema;
   process.env.JWT_SECRET_KEY = "test-secret-key-that-is-long-enough-0123456789";
   process.env.ADMIN_INVITE_CODE = "test-invite-code";
+  // Uploads (and the demo reset, which wipes them) never touch backend/uploads.
+  process.env.UPLOADS_DIR = uploadsDir;
 
   const { migrator } = await import("../config/migrator.js");
   const { default: sequelize } = await import("../config/database.js");
@@ -38,6 +44,7 @@ export async function setup() {
 }
 
 export async function teardown() {
+  fs.rmSync(uploadsDir, { recursive: true, force: true });
   await withClient((client) =>
     client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`),
   );

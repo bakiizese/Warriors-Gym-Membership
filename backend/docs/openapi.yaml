@@ -1,0 +1,1086 @@
+openapi: 3.0.3
+info:
+  title: Warriors Gym Membership API
+  version: 1.0.0
+  description: |
+    REST API behind the Warriors Gym admin web app, admin mobile app and member mobile app.
+
+    **Authentication.** Sign in at `/auth/sign-in/{userType}`, then send the returned token as
+    `Authorization: Bearer <token>`. Admin routes need an admin token and member routes a member
+    token; a token for one role is rejected on the other.
+
+    **Errors.** Every error is `{ "error": "message" }` with a meaningful status
+    (400 validation, 401 auth, 403 forbidden, 404 missing, 409 conflict, 413 too large, 429 rate limited).
+
+    **Demo.** When the server runs in demo mode, sample data is seeded and the two published demo
+    logins cannot be changed. Data resets nightly.
+servers:
+  - url: http://localhost:5000
+    description: Local development
+tags:
+  - name: System
+  - name: Auth
+  - name: Admin
+  - name: Member
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Liveness and database check
+      responses:
+        "200":
+          description: Server and database are up
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Database unreachable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+  /ping:
+    get:
+      tags: [System]
+      summary: Cheap liveness probe (no database)
+      responses:
+        "200":
+          description: Pong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { ping: { type: string, example: success } }
+  /demo/reset:
+    post:
+      tags: [System]
+      summary: Reset demo data (demo mode only)
+      description: Wipes and reseeds the database and deletes visitor uploads. Only mounted when `DEMO_MODE` is on and `DEMO_RESET_TOKEN` is set.
+      parameters:
+        - in: header
+          name: x-reset-token
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Demo data restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reset: { type: boolean }
+                  seeded: { type: boolean }
+                  members: { type: integer }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /auth/sign-up/{userType}:
+    post:
+      tags: [Auth]
+      summary: Register a member (or an admin with an invite code)
+      description: |
+        Members can register freely. Admin registration is disabled unless the server has
+        `ADMIN_INVITE_CODE` set, and then requires it in the `x-invite-code` header.
+        Fields outside the documented set are ignored.
+      parameters:
+        - $ref: "#/components/parameters/userType"
+        - in: header
+          name: x-invite-code
+          description: Required only for `admin`
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignUp" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { type: string, example: user created successfuly } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /auth/sign-in/{userType}:
+    post:
+      tags: [Auth]
+      summary: Sign in and receive a JWT
+      parameters:
+        - $ref: "#/components/parameters/userType"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number, password]
+              properties:
+                phone_number: { type: string }
+                password: { type: string }
+                language: { type: string, description: Saved as the user's language }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string, description: JWT carrying id, phone_number and role }
+                  userCheck:
+                    oneOf:
+                      - $ref: "#/components/schemas/Member"
+                      - $ref: "#/components/schemas/Admin"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /auth/sign-up/{phoneNumber}:
+    get:
+      tags: [Auth]
+      summary: Check whether a member phone number is registered
+      parameters:
+        - in: path
+          name: phoneNumber
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { type: string, example: phone number exists } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /auth/self:
+    get:
+      tags: [Auth]
+      summary: Check that a token is still valid
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { token: { type: string, example: correct } }
+        "401":
+          description: Missing, malformed, invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { message: { type: string } }
+
+  /admin/me:
+    get:
+      tags: [Admin]
+      summary: The signed-in admin
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Admin profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { $ref: "#/components/schemas/Admin" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/profile:
+    put:
+      tags: [Admin]
+      summary: Update the signed-in admin's profile
+      description: |
+        Send a `metadata` JSON string and, optionally, an image in `file`. Editable fields are
+        `full_name` and `language`. Send `oldPassword` and `password` to change the password, or
+        `phone_number` to change it; a phone change returns a fresh token.
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/ProfileForm" }
+      responses:
+        "200": { $ref: "#/components/responses/ProfileUpdated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/addMember:
+    post:
+      tags: [Admin]
+      summary: Add a member
+      description: Same fields as member sign-up, sent as a `metadata` JSON string plus an optional image in `file`. An admin may also set the initial `activity_status`.
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/ProfileForm" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/updateMember:
+    put:
+      tags: [Admin]
+      summary: Update a member's details
+      description: '`metadata` must include the member `id`. Editable: full_name, gender, height, weight, age, language, phone_number, plus an optional image.'
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/ProfileForm" }
+      responses:
+        "200": { $ref: "#/components/responses/ProfileUpdated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/members:
+    get:
+      tags: [Admin]
+      summary: List members with their current plan name
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items: { $ref: "#/components/schemas/Member" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/member/{memberId}:
+    delete:
+      tags: [Admin]
+      summary: Delete a member and their memberships, payments and attendance
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/memberId"
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { member: { type: string, example: removed successfuly } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/members_status:
+    get:
+      tags: [Admin]
+      summary: Counts of active and payment-due members
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members_status:
+                    type: object
+                    properties:
+                      activeMembers: { type: integer }
+                      paymentDueMembers: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/membership_plans:
+    get:
+      tags: [Admin]
+      summary: List plans with their live memberships
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  membershipPlan:
+                    type: array
+                    items: { $ref: "#/components/schemas/MembershipPlan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/membership_plan:
+    post:
+      tags: [Admin]
+      summary: Create a plan
+      description: '`plan_type` is `Daily` or `Ticket`; `Ticket` plans also need `ticket_amount`.'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MembershipPlanInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/membership_plan/{membershipId}:
+    put:
+      tags: [Admin]
+      summary: Update a plan
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/uuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MembershipPlanInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Admin]
+      summary: Delete an unused plan
+      description: Refused with 409 once anyone has bought the plan, because deleting it would cascade to their memberships. Set `status` to `Inactive` instead.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/uuidId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /admin/attendanceLog:
+    get:
+      tags: [Admin]
+      summary: The 100 most recent check-ins
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Check-ins, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attendanceLog:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceLog" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/attendanceLog/today:
+    get:
+      tags: [Admin]
+      summary: Number of check-ins in the last 24 hours
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { attendanceCount: { type: integer } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/memberAttendance/{memberId}:
+    post:
+      tags: [Admin]
+      summary: Check a member in
+      description: |
+        Records a check-in against the member's live membership, then re-evaluates status:
+        under 5 days left or under 3 tickets left is `Payment Due`; expired or out of tickets is
+        `Inactive`. A second check-in within 23 hours is refused.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/memberId"
+      responses:
+        "200":
+          description: Recorded; the array holds the log entry and `{ full_name }`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attendance: { type: array, items: { type: object } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/workout/{workoutType}:
+    get:
+      tags: [Admin]
+      summary: Workouts of one type, grouped by type
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: workoutType
+          required: true
+          schema: { type: string, example: Chest }
+      responses:
+        "200":
+          description: Workouts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workout: { $ref: "#/components/schemas/WorkoutsByType" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/workouts:
+    get:
+      tags: [Admin]
+      summary: All workouts grouped by type, with video file sizes
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Workouts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workoutPlan: { $ref: "#/components/schemas/WorkoutsByType" }
+                  length: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/workout:
+    post:
+      tags: [Admin]
+      summary: Create a workout with its video
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [metadata, file]
+              properties:
+                metadata:
+                  type: string
+                  description: JSON with workout_title, workout_type, workout_level, workout_rep, workout_sets, workout_break
+                file: { type: string, format: binary, description: The video }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { workoutPlan: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "413": { $ref: "#/components/responses/TooLarge" }
+  /admin/workoutRemove/{workoutId}:
+    delete:
+      tags: [Admin]
+      summary: Delete a workout and its video file
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: workoutId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { workout: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/workoutUpdate:
+    put:
+      tags: [Admin]
+      summary: Update a workout, optionally replacing its video
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [metadata]
+              properties:
+                metadata: { type: string, description: JSON with the workout `id` and any fields to change }
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { workout: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/transactions:
+    get:
+      tags: [Admin]
+      summary: All payments, newest first
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Payments with the payer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Transaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/transaction:
+    post:
+      tags: [Admin]
+      summary: Record a payment and start or renew a membership
+      description: |
+        Set `isNew` to start a new membership on `membershipPlan_id` (retiring the member's previous
+        live one), or send `membership_id` to renew an existing one. Duration and tickets always come
+        from the plan, never from the request. The whole operation is atomic.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payer_id, membershipPlan_id, payment_method, amount, payment_for, paid_at]
+              properties:
+                payer_id: { type: integer }
+                membershipPlan_id: { type: string, format: uuid }
+                payment_method: { type: string, example: Cash }
+                amount: { type: integer, minimum: 0 }
+                payment_for: { type: string }
+                paid_at: { type: string, example: 21-09-2026, description: DD-MM-YYYY }
+                isNew: { type: boolean }
+                membership_id: { type: string, format: uuid, description: Required when isNew is false }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { transaction: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/membership/{memberId}:
+    get:
+      tags: [Admin]
+      summary: A member's active membership
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/memberId"
+      responses:
+        "200":
+          description: Membership with its plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { $ref: "#/components/schemas/Membership" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/programs:
+    get:
+      tags: [Admin]
+      summary: The 50 newest programs
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Programs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  programs:
+                    type: array
+                    items: { $ref: "#/components/schemas/Program" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Admin]
+      summary: Create a program
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties: { content: { type: string } }
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { programs: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/programs/{id}:
+    delete:
+      tags: [Admin]
+      summary: Delete a program
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/uuidId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { programs: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /member/me:
+    get:
+      tags: [Member]
+      summary: The signed-in member
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { member: { $ref: "#/components/schemas/Member" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /member/profile:
+    put:
+      tags: [Member]
+      summary: Update the signed-in member's profile
+      description: Editable fields are full_name, gender, height, weight, age and language. Send `oldPassword` and `password` to change the password, or `phone_number` to change it; a phone change returns a fresh token.
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/ProfileForm" }
+      responses:
+        "200": { $ref: "#/components/responses/ProfileUpdated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /member/membership_plans:
+    get:
+      tags: [Member]
+      summary: Plans currently on sale
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Active plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  membershipPlan:
+                    type: array
+                    items: { $ref: "#/components/schemas/MembershipPlan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /member/membership:
+    get:
+      tags: [Member]
+      summary: The member's live membership with days and tickets left
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Membership
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  membership:
+                    allOf:
+                      - $ref: "#/components/schemas/Membership"
+                      - type: object
+                        properties:
+                          daysLeft: { type: integer }
+                          remainingTicket: { type: integer, description: Ticket plans only }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /member/membership/off:
+    post:
+      tags: [Member]
+      summary: Buy or renew a membership (simulated checkout)
+      description: |
+        Records a `Pending` payment at the plan's database price and activates the membership; no
+        money moves until the Chapa integration is enabled. With `isNew: true`, `id` is a plan id;
+        otherwise `id` is the member's own membership id to renew. Prices and durations in the
+        request body are ignored.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, format: uuid }
+                isNew: { type: boolean }
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string, enum: [new success, renew success] } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /member/membershipRenew:
+    put:
+      tags: [Member]
+      summary: Renew the member's own membership
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [membership_id]
+              properties: { membership_id: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Renewed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /member/membershipCancel:
+    put:
+      tags: [Member]
+      summary: Cancel the member's own membership
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties: { id: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { membership: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /member/transactions:
+    get:
+      tags: [Member]
+      summary: The member's 30 most recent payments
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Payments, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Transaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /member/attendanceLog:
+    get:
+      tags: [Member]
+      summary: The member's 20 most recent check-ins, oldest first
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Check-ins
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attendanceLog:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceLog" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /member/webhook/chapa/off:
+    get:
+      tags: [Member]
+      summary: Placeholder for the Chapa payment callback
+      description: Not functional yet. It will become a verified, idempotent POST when Chapa is integrated.
+      responses:
+        "200":
+          description: Placeholder response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { webhook: { type: string } }
+  /member/workoutPlan:
+    get:
+      tags: [Member]
+      summary: All workouts grouped by type
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Workouts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workoutPlan: { $ref: "#/components/schemas/WorkoutsByType" }
+                  length: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /member/programs:
+    get:
+      tags: [Member]
+      summary: The 50 newest programs
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Programs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  programs:
+                    type: array
+                    items: { $ref: "#/components/schemas/Program" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    userType:
+      in: path
+      name: userType
+      required: true
+      schema: { type: string, enum: [member, admin] }
+    memberId:
+      in: path
+      name: memberId
+      required: true
+      description: Numeric member id (the zero-padded form, e.g. 00042, is accepted too)
+      schema: { type: integer, minimum: 1 }
+    uuidId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  requestBodies:
+    ProfileForm:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [metadata]
+            properties:
+              metadata: { type: string, description: JSON object with the fields to change }
+              file: { type: string, format: binary, description: Optional profile image }
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing, invalid or expired token, or wrong role
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Not allowed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflicts with existing data
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooLarge:
+      description: Upload exceeds the size limit
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ProfileUpdated:
+      description: Updated. A phone-number change also returns a new token and the user.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - type: object
+                properties: { user: { type: string, example: successfully updated } }
+              - type: object
+                properties:
+                  token: { type: string }
+                  user: { type: object }
+  schemas:
+    Error:
+      type: object
+      properties: { error: { type: string } }
+    Health:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        db: { type: string, enum: [up, down] }
+        demo: { type: boolean }
+    SignUp:
+      type: object
+      required: [full_name, phone_number, password, language]
+      properties:
+        full_name: { type: string }
+        phone_number: { type: string }
+        password: { type: string, minLength: 6 }
+        language: { type: string }
+        gender: { type: string, description: Member only }
+        height: { type: integer, description: Member only }
+        weight: { type: integer, description: Member only }
+        age: { type: integer, description: Member only }
+        registration_Date: { type: string, description: Member only }
+        admin_level: { type: string, description: Admin only }
+    Member:
+      type: object
+      properties:
+        id: { type: string, example: "00042", description: Zero-padded }
+        full_name: { type: string }
+        phone_number: { type: string }
+        gender: { type: string }
+        height: { type: integer }
+        weight: { type: integer }
+        age: { type: integer }
+        activity_status: { type: string, enum: [Active, Payment Due, Inactive] }
+        language: { type: string }
+        image: { type: string, nullable: true }
+        registration_Date: { type: string }
+    Admin:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        phone_number: { type: string }
+        admin_level: { type: string }
+        language: { type: string }
+        image: { type: string, nullable: true }
+    MembershipPlanInput:
+      type: object
+      properties:
+        membership_name: { type: string }
+        plan_type: { type: string, enum: [Daily, Ticket] }
+        duration_days: { type: integer, minimum: 1 }
+        fee: { type: integer, minimum: 0 }
+        ticket_amount: { type: integer, minimum: 1, description: Required for Ticket plans }
+        description: { type: string }
+        status: { type: string, enum: [Active, Inactive] }
+    MembershipPlan:
+      allOf:
+        - $ref: "#/components/schemas/MembershipPlanInput"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+    Membership:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        member_id: { type: integer }
+        membership_plan_id: { type: string, format: uuid }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        ticket: { type: integer, nullable: true }
+        status: { type: string, enum: [Active, Payment Due, Inactive, Cancled] }
+        membershipPlan: { $ref: "#/components/schemas/MembershipPlan" }
+    AttendanceLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        member_id: { type: integer }
+        membership_id: { type: string, format: uuid }
+        check_in: { type: string, format: date-time }
+        check_out: { type: string, nullable: true }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        payer_id: { type: integer }
+        membershipPlan_id: { type: string, format: uuid }
+        payment_method: { type: string }
+        amount: { type: integer }
+        payment_for: { type: string }
+        paid_at: { type: string }
+        status: { type: string, enum: [Pending, Successfull] }
+        payer: { $ref: "#/components/schemas/Member" }
+    Video:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        path: { type: string, example: uploads/videos/1758000000000-uuid.mp4, description: Prefix with the server address to get a URL }
+        size: { type: integer, description: Bytes on disk, 0 if unavailable }
+    WorkoutPlan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workout_title: { type: string }
+        workout_type: { type: string }
+        workout_level: { type: string }
+        workout_rep: { type: integer }
+        workout_sets: { type: integer }
+        workout_break: { type: string }
+        video: { $ref: "#/components/schemas/Video" }
+    WorkoutsByType:
+      type: object
+      description: Workouts keyed by their `workout_type`
+      additionalProperties:
+        type: array
+        items: { $ref: "#/components/schemas/WorkoutPlan" }
+    Program:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        content: { type: string }
