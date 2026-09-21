@@ -167,6 +167,12 @@ jobs:
           MEMBER_MOBILE_URL: ${{ env.MEMBER_MOBILE_URL }}
         run: sh .github/scripts/pages-headers.sh "${{ matrix.kind }}" "${{ matrix.dir }}/dist"
 
+      # The apps build on Node 20, like CI. Wrangler needs Node 22 or newer, so
+      # switch only for the publish.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
       # Creating the project is a no-op when it exists; a real problem such as a
       # bad token shows up in the deploy right after.
       - name: Publish to Cloudflare Pages
