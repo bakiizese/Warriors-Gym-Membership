@@ -4,6 +4,7 @@ BACKEND_PORT       ?= 5000
 ADMIN_WEB_PORT     ?= 8080
 ADMIN_MOBILE_PORT  ?= 8081
 MEMBER_MOBILE_PORT ?= 8082
+LANDING_PORT       ?= 8090
 
 .DEFAULT_GOAL := help
 .PHONY: help up down logs ps dev dev-down test seed reseed psql clean
@@ -11,9 +12,10 @@ MEMBER_MOBILE_PORT ?= 8082
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-up: ## Build and start the stack (db, api, admin web, mobile web builds) in the background
+up: ## Build and start the stack (db, api, web apps, landing page) in the background
 	$(COMPOSE) up --build -d --wait
 	@echo ""
+	@echo "  Landing page  http://localhost:$(LANDING_PORT)"
 	@echo "  Admin web     http://localhost:$(ADMIN_WEB_PORT)"
 	@echo "  Admin mobile  http://localhost:$(ADMIN_MOBILE_PORT)"
 	@echo "  Member mobile http://localhost:$(MEMBER_MOBILE_PORT)"

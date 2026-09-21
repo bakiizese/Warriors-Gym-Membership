@@ -25,6 +25,18 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
 
+  - package-ecosystem: npm
+    directory: /landing
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
   # The Expo apps pin every package to the SDK version, so routine bumps are
   # done with `npx expo install --fix` when the SDK is upgraded. A limit of 0
   # turns off version updates only; security updates still open PRs.
@@ -44,6 +56,7 @@ updates:
     directories:
       - /backend
       - /admin-frontend/web
+      - /landing
     schedule:
       interval: weekly
       day: monday

@@ -23,6 +23,9 @@ Warriors-Gym-Membership/
 ├── mobile/
 │   └── Mobile Application for Gym Members
 │
+├── landing/
+│   └── Landing Page: pitch, demo logins and live previews
+│
 └── README.md
 ```
 
@@ -90,7 +93,7 @@ Features may include:
 
 ### Run everything with Docker (recommended)
 
-You need Docker with the Compose plugin. One command starts PostgreSQL, the API, the admin web app and the browser builds of both mobile apps, with sample data and demo logins already loaded. The first build takes a few minutes, since it compiles the two Expo apps.
+You need Docker with the Compose plugin. One command starts PostgreSQL, the API, the admin web app, the browser builds of both mobile apps and the landing page, with sample data and demo logins already loaded. The first build takes a few minutes, since it compiles the two Expo apps.
 
 ```bash
 git clone https://github.com/bakiizese/Warriors-Gym-Membership.git
@@ -100,6 +103,7 @@ make up            # or: docker compose up --build -d
 
 | What | Where |
 | --- | --- |
+| Landing page (start here) | http://localhost:8090 |
 | Admin web app | http://localhost:8080 |
 | Admin mobile app (browser build) | http://localhost:8081 |
 | Member mobile app (browser build) | http://localhost:8082 |
