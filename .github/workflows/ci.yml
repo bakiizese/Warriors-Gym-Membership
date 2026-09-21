@@ -137,12 +137,10 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
-  # Both Expo apps. `tsc` is enforced. Lint reports but does not block yet: the
-  # apps still have real errors (for example an undefined `setShowThumbnail` in
-  # admin ManageWorkoutDetail) that are fixed in the mobile phase, which then
-  # removes `continue-on-error`.
+  # Both Expo apps: type check, lint (errors block, warnings do not) and a web
+  # export, which is what the hosted demo serves.
   admin-mobile:
-    name: Admin mobile (types, lint)
+    name: Admin mobile (types, lint, web build)
     needs: changes
     if: needs.changes.outputs.admin-mobile == 'true'
     runs-on: ubuntu-latest
@@ -160,10 +158,14 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx expo lint
-        continue-on-error: true
+      - name: Export the web build
+        run: npx expo export --platform web
+        env:
+          CI: "1"
+          EXPO_PUBLIC_ADDRESS: http://localhost:5000
 
   member-mobile:
-    name: Member mobile (types, lint)
+    name: Member mobile (types, lint, web build)
     needs: changes
     if: needs.changes.outputs.member-mobile == 'true'
     runs-on: ubuntu-latest
@@ -181,7 +183,11 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx expo lint
-        continue-on-error: true
+      - name: Export the web build
+        run: npx expo export --platform web
+        env:
+          CI: "1"
+          EXPO_PUBLIC_ADDRESS: http://localhost:5000
 
   # Builds the real images and starts the whole stack the way `make up` does,
   # then checks the API and the web admin actually answer.
