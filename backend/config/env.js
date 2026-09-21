@@ -59,9 +59,12 @@ export const env = Object.freeze({
   DATABASE_SSL: toBool(process.env.DATABASE_SSL, false),
   DATABASE_SCHEMA,
   JWT_SECRET_KEY,
-  // The mobile apps do not sign out on 401 yet, so keep this generous until
-  // they do (tracked for the mobile phase), then shorten it.
+  // The mobile apps sign out on a 401, so a shorter lifetime is safe. The hosted
+  // demo sets 7d; the default stays generous for local use.
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "30d",
+  // The commit this build was made from, when the host tells us (Render sets
+  // RENDER_GIT_COMMIT). /ping reports it so a deploy can be checked from outside.
+  COMMIT: (process.env.RENDER_GIT_COMMIT ?? process.env.GIT_COMMIT ?? "").slice(0, 7) || null,
   UPLOAD_MAX_MB: Number(process.env.UPLOAD_MAX_MB ?? 100),
   // Folder that holds uploaded images and videos (default: backend/uploads).
   UPLOADS_DIR: process.env.UPLOADS_DIR || undefined,

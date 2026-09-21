@@ -13,6 +13,12 @@ describe("smoke", () => {
     expect(res.body).toEqual({ status: "ok", db: "up", demo: false });
   });
 
+  it("answers /ping without a commit when the host does not provide one", async () => {
+    const res = await request(app).get("/ping");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ping: "success", commit: null });
+  });
+
   it("migrations created every table in the isolated schema", async () => {
     // Aliased on purpose: Sequelize special-cases SQL that starts with
     // "SELECT table_name FROM information_schema.tables" and returns bare values.

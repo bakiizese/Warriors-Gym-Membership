@@ -43,6 +43,7 @@ paths:
     get:
       tags: [System]
       summary: Cheap liveness probe (no database)
+      description: Never touches the database, so it is safe for keep-alive pings. `commit` is the short SHA the running build was made from, or null when the host does not provide one.
       responses:
         "200":
           description: Pong
@@ -50,7 +51,9 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: { ping: { type: string, example: success } }
+                properties:
+                  ping: { type: string, example: success }
+                  commit: { type: string, nullable: true, example: 9bdd456 }
   /demo/reset:
     post:
       tags: [System]
