@@ -1,0 +1,15 @@
+node_modules
+dist
+web-build
+.expo
+.env
+.env.*
+!.env.example
+.git
+.vscode
+/ios
+/android
+*.log
+README.md
+Dockerfile
+.dockerignore

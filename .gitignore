@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Environment files (commit only *.example)
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+dist-ssr/
+web-build/
+build/
+coverage/
+
+# Expo / React Native
+.expo/
+expo-env.d.ts
+.metro-health-check*
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.sw?
+
+# Docker
+docker-compose.override.yml
+
+# Backend runtime uploads (folders kept via .gitkeep)
+backend/uploads/images/*
+backend/uploads/videos/*
+!backend/uploads/images/.gitkeep
+!backend/uploads/videos/.gitkeep
+
+# Generated bundles
+backend/bundle.mjs
