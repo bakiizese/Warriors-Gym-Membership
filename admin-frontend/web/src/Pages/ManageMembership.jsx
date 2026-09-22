@@ -103,11 +103,10 @@ const ManageMembershipPlans = () => {
               className="relative flex flex-row justify-between w-full h-[120px] px-3 py-2 my-1 bg-[#425CB1]/50 rounded-2xl overflow-hidden"
             >
               <div
-                className={`absolute top-0 left-0 h-3 w-36 ${
-                  membershipItem.status === "Active"
+                className={`absolute top-0 left-0 h-3 w-36 ${membershipItem.status === "Active"
                     ? "bg-[#4CA24F]"
                     : "bg-[#868686]"
-                }`}
+                  }`}
               />
 
               <div className="flex flex-col justify-evenly items-start">
@@ -166,7 +165,7 @@ const ManageMembershipPlans = () => {
           <Confirmation
             setRemove={setConfirm}
             title="?"
-            content="Do you want to delete this?"
+            content="Are you sure you want to delete this?"
             onConfirmed={() => deleteMembership(confirm)}
           />
         )}

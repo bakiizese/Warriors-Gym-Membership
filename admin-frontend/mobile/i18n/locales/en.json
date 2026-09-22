@@ -2,6 +2,8 @@
   "dashboard": {
     "admin": "Admin",
     "Admin": "Admin",
+    "Secretary": "Secretary",
+    "secretary": "Secretary",
     "Select Language": "Select Language",
     "Total Active Members": "Total Active Members",
     "Today Visits": "Today Visits",

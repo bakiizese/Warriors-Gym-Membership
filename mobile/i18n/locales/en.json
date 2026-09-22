@@ -54,7 +54,9 @@
     "Attendance Log": "Attendance Log",
     "Edit": "Edit",
     "Male": "Male",
+    "male": "Male",
     "Female": "Female",
+    "female": "Female",
     "Logout": "Logout"
   },
   "membership": {
@@ -133,7 +135,7 @@
     "Status": "Status"
   },
   "landingPage": {
-    "Address Tigray, Axum, Edaga Hamus": "Address: Tigray, Axum, Edaga Hamus",
+    "Address": "Address:",
     "Contact": "Contact:"
   }
 }

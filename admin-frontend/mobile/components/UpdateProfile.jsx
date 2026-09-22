@@ -126,10 +126,10 @@ const UpdateProfile = ({
                 ? { uri: localImage }
                 : personalData?.image
                   ? {
-                      uri: isFullUri(personalData.image)
-                        ? personalData.image
-                        : `${ADDRESS}/${personalData.image}`,
-                    }
+                    uri: isFullUri(personalData.image)
+                      ? personalData.image
+                      : `${ADDRESS}/${personalData.image}`,
+                  }
                   : profile
             }
             resizeMode="contain"

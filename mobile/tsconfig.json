@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -20,7 +22,7 @@
     "components/AuthPage/Signs/SignIn.jsx",
     "components/AuthPage/Signs/Sign.jsx",
     "components/AuthPage/Attributes/Language.jsx",
-    "components/AuthPage/LangingPage.jsx",
+    "components/AuthPage/LandingPage.jsx",
     "components/AuthPage/Attributes/Height.jsx",
     "components/AuthPage/Attributes/Gender.jsx",
     "components/AuthPage/Auth.jsx",

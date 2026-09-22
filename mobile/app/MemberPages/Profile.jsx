@@ -250,10 +250,10 @@ const Profile = () => {
                     source={
                       profileData?.image
                         ? {
-                            uri: isFullUri(profileData?.image)
-                              ? profileData?.image
-                              : `${ADDRESS}/${profileData.image}`,
-                          }
+                          uri: isFullUri(profileData?.image)
+                            ? profileData?.image
+                            : `${ADDRESS}/${profileData.image}`,
+                        }
                         : profile
                     }
                     resizeMode="contain"
@@ -297,7 +297,7 @@ const Profile = () => {
                   </Text>
                 </View>
               </View>
-              <View className="flex-1 pt-4">
+              <View className="flex pt-4">
                 <View className="h-[410px] flex flex-col">
                   <Text className="text-white text-[40px] h-14 px-2 font-jura leading-none">
                     {t("profile.Attendance Log")}
