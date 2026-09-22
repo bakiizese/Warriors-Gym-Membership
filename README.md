@@ -3,97 +3,108 @@
 [![CI](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/ci.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/codeql.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/codeql.yml)
 [![Secret scan](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/secrets.yml/badge.svg)](https://github.com/bakiizese/Warriors-Gym-Membership/actions/workflows/secrets.yml)
+[![License](https://img.shields.io/github/license/bakiizese/Warriors-Gym-Membership)](LICENSE)
+[![Live demo](https://img.shields.io/badge/live%20demo-warriors--gym.pages.dev-d9252b)](https://warriors-gym.pages.dev)
 
-## Overview
+A gym membership system I built end to end: an Express and PostgreSQL API, a React admin panel, and two React Native apps, one for staff and one for members. It started as a system for a real gym and is now a public demo you can sign in to.
 
-Warriors Gym Membership System is a comprehensive gym management platform designed to streamline membership management, user engagement, and administrative operations. The project consists of a backend service, an administrative web application, and a mobile application for gym members.
+**[Open the live demo](https://warriors-gym.pages.dev)**
 
-## Project Structure
+[![The landing page](docs/img/landing.webp)](https://warriors-gym.pages.dev)
 
-```text
-Warriors-Gym-Membership/
-│
-├── admin-frontend/
-│   ├── Web Application
-│   └── Mobile Application for Administrators
-│
-├── backend/
-│   └── Backend API and Business Logic
-│
-├── mobile/
-│   └── Mobile Application for Gym Members
-│
-├── landing/
-│   └── Landing Page: pitch, demo logins and live previews
-│
-└── README.md
+## Try it
+
+The landing page opens all three apps in the browser. Sign in with the demo logins:
+
+| App | Phone number | Password |
+| --- | --- | --- |
+| Admin (web and mobile) | `0900000001` | `demo1234` |
+| Member (mobile) | `0911000001` | `demo1234` |
+
+Everyone shares these accounts, so you can change any data but not the logins themselves. The data resets every night. The API runs on a free plan and sleeps when idle, so the first request can take about a minute; the status light on the landing page shows when it is awake.
+
+## What is in it
+
+| Part | What it does | Stack |
+| --- | --- | --- |
+| [`backend/`](backend) | REST API: auth and roles, members, membership plans, payments, attendance, workouts, programs. 44 endpoints, documented at `/docs` | Node 20, Express 5, Sequelize, PostgreSQL 16 |
+| [`admin-frontend/web/`](admin-frontend/web) | What staff use at the desk | React 19, Vite, Tailwind |
+| [`admin-frontend/mobile/`](admin-frontend/mobile) | Staff app for the gym floor: QR check-in, payments, works offline | Expo, React Native, expo-camera |
+| [`mobile/`](mobile) | Member app: workout videos, membership status, payments, attendance. English, Amharic and Tigrigna | Expo, React Native, i18next |
+| [`landing/`](landing) | The page above: pitch, demo logins, live previews of the apps | Vite, React 19, TypeScript, Tailwind 4 |
+
+Both mobile apps also build for the browser, which is how the landing page shows them, and as Android APKs (see [Android APKs](#android-apks)).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph clients [Clients]
+    A["Admin web<br/>React 19 · Vite"]
+    B["Admin mobile<br/>Expo · React Native"]
+    C["Member mobile<br/>Expo · React Native"]
+  end
+  API["Express API<br/>JWT · rate limits · OpenAPI"]
+  DB[("PostgreSQL 16")]
+  A & B & C -->|"HTTPS · JSON"| API
+  API -->|SQL| DB
 ```
 
-### Components
+The hosted demo runs on free plans:
 
-#### 1. Admin Frontend (`admin-frontend/`)
+| Piece | Where | Deployed by |
+| --- | --- | --- |
+| API | Render (Docker) | [deploy.yml](.github/workflows/deploy.yml), after CI passes on `main` |
+| Database | Neon (PostgreSQL) | nothing to deploy; the API runs its own migrations on boot |
+| Landing page and the three apps | Cloudflare Pages (four sites) | [deploy.yml](.github/workflows/deploy.yml) |
+| Keep the API awake, reset the demo nightly | GitHub Actions on a schedule | [keepalive.yml](.github/workflows/keepalive.yml), [reset-demo.yml](.github/workflows/reset-demo.yml) |
 
-The administrative interface used by gym staff and administrators to manage the platform.
+## Screens
 
-Features may include:
+| Admin web | Admin mobile | Member mobile |
+| --- | --- | --- |
+| <img src="landing/public/screens/admin-web.webp" alt="Manage Members in the admin web app" width="380"> | <img src="landing/public/screens/admin-dashboard.webp" alt="The admin mobile dashboard" width="180"> | <img src="landing/public/screens/member-dashboard.webp" alt="The member dashboard" width="180"> |
 
-* Member management
-* Membership plan management
-* Attendance monitoring
-* Payment tracking
-* Reports and analytics
-* Notifications and announcements
-* Administrative dashboard
+<details>
+<summary>Screenshots from the native apps</summary>
 
-This directory contains both the web-based admin panel and the administrator mobile application.
+### Admin
 
-#### 2. Backend (`backend/`)
+<img width="240" alt="Admin app screenshot 1" src="https://github.com/user-attachments/assets/76237eb8-0ec1-4e3e-9547-3a80e5e9f52a" />
+<img width="240" alt="Admin app screenshot 2" src="https://github.com/user-attachments/assets/07f59d1f-7c1f-4af1-8329-ee64b6bae5bf" />
+<img width="240" alt="Admin app screenshot 3" src="https://github.com/user-attachments/assets/3fb8779b-656b-4c4d-90e6-96e8a74c8b47" />
 
-The core engine of the system responsible for handling:
+### Member
 
-* Authentication and authorization
-* Membership management
-* User management
-* Payment processing
-* Attendance records
-* Notifications
-* Database operations
-* RESTful APIs
+<img width="240" alt="Member app screenshot 1" src="https://github.com/user-attachments/assets/9725f388-a800-4cdf-8b23-e5e3a97129ab" />
+<img width="240" alt="Member app screenshot 2" src="https://github.com/user-attachments/assets/f17e983b-5a1c-4cb2-b998-4b013b8b5357" />
+<img width="240" alt="Member app screenshot 3" src="https://github.com/user-attachments/assets/383c6add-bb8b-4dcb-affd-fe1abd200372" />
+<img width="240" alt="Member app screenshot 4" src="https://github.com/user-attachments/assets/261a721b-949d-46b7-8984-f9ddc40f93bc" />
+<img width="240" alt="Member app screenshot 5" src="https://github.com/user-attachments/assets/364830d7-f44f-42d6-9981-87638128fdc8" />
+<img width="240" alt="Member app screenshot 6" src="https://github.com/user-attachments/assets/d0edb0fa-527f-4589-a107-5ca46b4f114b" />
 
-The backend serves both the admin applications and the member mobile application.
+</details>
 
-#### 3. Mobile Application (`mobile/`)
+## Engineering decisions
 
-The mobile application designed for gym members.
+The short version. The reasoning is in [docs/adr](docs/adr).
 
-Features may include:
+- **Schema changes are migrations, not `sync()`.** Every change is a reviewed file, and the tests run all of them into a throwaway schema. ([ADR 1](docs/adr/0001-migrations-over-sync.md))
+- **The API is locked down by default.** Admin sign-up needs an invite code, tokens expire, password hashes are never returned by any query unless a password is being checked, and the auth routes have their own rate limit. Details in [SECURITY.md](SECURITY.md).
+- **Tests run against a real PostgreSQL.** 99 tests cover auth and role separation, plan and payment rules, check-in status changes, ownership checks and uploads. One test fails if [`openapi.yaml`](backend/docs/openapi.yaml) and the routes disagree.
+- **The Android APKs are built with Gradle on GitHub Actions, not EAS.** No third-party account, and the build is in the repo. ([ADR 2](docs/adr/0002-gradle-apk-builds.md))
+- **The demo is hosted for free, and built to survive that.** A keep-alive on a route that never touches the database, a deploy that waits for the new commit to answer, and a nightly reset. ([ADR 3](docs/adr/0003-free-hosting-layout.md))
+- **The demo can be abused safely.** Locked demo logins, simulated payments, and a reset endpoint behind a secret token. ([ADR 4](docs/adr/0004-demo-mode.md))
 
-* User registration and login
-* Membership status tracking
-* Workout schedules
-* Membership renewal
-* Payment history
-* Notifications and updates
-* Profile management
+### CI
 
-## Technology Stack
+One workflow runs only what a pull request touches, and a final `CI` check is the one branch protection requires. It runs ESLint on every app, the backend tests on PostgreSQL, a Trivy scan of the API image, TypeScript checks, the Expo web exports, and a smoke test that starts the whole Docker stack and calls it. CodeQL and gitleaks run on their own workflows, and Dependabot keeps npm, Docker and Actions up to date. Third-party actions are pinned to commit SHAs.
 
-### Frontend
+## Run it locally
 
-* Web Technologies (React, Next.js, or equivalent)
-* Mobile Technologies (React Native, Flutter, or equivalent)
+### With Docker (recommended)
 
-### Backend
-
-* Node.js / Express
-* REST API
-* Database Management System
-
-## Getting Started
-
-### Run everything with Docker (recommended)
-
-You need Docker with the Compose plugin. One command starts PostgreSQL, the API, the admin web app, the browser builds of both mobile apps and the landing page, with sample data and demo logins already loaded. The first build takes a few minutes, since it compiles the two Expo apps.
+You need Docker with the Compose plugin. One command starts PostgreSQL, the API, the admin web app, the browser builds of both mobile apps and the landing page, with sample data and the demo logins already loaded. The first build takes a few minutes, since it compiles the two Expo apps.
 
 ```bash
 git clone https://github.com/bakiizese/Warriors-Gym-Membership.git
@@ -108,10 +119,8 @@ make up            # or: docker compose up --build -d
 | Admin mobile app (browser build) | http://localhost:8081 |
 | Member mobile app (browser build) | http://localhost:8082 |
 | API docs (Swagger UI) | http://localhost:5000/docs |
-| Demo admin login | `0900000001` / `demo1234` |
-| Demo member login | `0911000001` / `demo1234` |
 
-Common commands (run `make help` for all of them):
+The demo logins are the ones above.
 
 | Command | What it does |
 | --- | --- |
@@ -120,21 +129,21 @@ Common commands (run `make help` for all of them):
 | `make reseed` | Wipe the database and reload the sample data |
 | `make down` / `make clean` | Stop the stack / stop it and delete its data |
 
-Ports, the database password and the JWT secret can be overridden with a `.env` file; copy [.env.example](.env.example).
+Run `make help` for all of them. Ports, the database password and the JWT secret can be overridden with a `.env` file; copy [.env.example](.env.example).
 
-### Run without Docker
+### Without Docker
 
 - **Backend:** see [backend/README.md](backend/README.md) (Node 20+, PostgreSQL).
 - **Admin web:** `cd admin-frontend/web && cp .env.example .env && npm ci && npm run dev`
 - **Mobile apps** (`admin-frontend/mobile` for admins, `mobile` for members): `cp .env.example .env`, set `EXPO_PUBLIC_ADDRESS` to your machine's LAN IP (a phone cannot reach `localhost`), then `npm ci && npx expo start`.
 
-On a device or emulator the apps run natively; the containers above serve their browser builds (`npx expo export --platform web`). The API address is baked into that build, so to point it elsewhere rebuild with `EXPO_PUBLIC_ADDRESS` set.
+On a device or emulator the apps run natively; the containers serve their browser builds (`npx expo export --platform web`). The API address is baked into that build, so to point it elsewhere rebuild with `EXPO_PUBLIC_ADDRESS` set.
 
-### Hosting the demo
+## Hosting your own copy
 
-The API runs on Render, the database on Neon and the four web apps on Cloudflare Pages, all on free plans, deployed by GitHub Actions after CI passes on `main`. The setup steps are in [docs/deploy.md](docs/deploy.md).
+The setup steps for Render, Neon and Cloudflare Pages are in [docs/deploy.md](docs/deploy.md). Nothing deploys until you set the `DEPLOY_ENABLED` repository variable.
 
-### Android APKs
+## Android APKs
 
 Pushing a version tag builds both apps with Gradle on GitHub Actions and attaches them to a release:
 
@@ -144,60 +153,33 @@ git tag v0.1.0 && git push origin v0.1.0
 
 The workflow ([release-apk.yml](.github/workflows/release-apk.yml)) needs the `API_URL` repository variable set to the hosted API address, because the apps have it baked in. The APKs are 64-bit ARM only and signed with a debug key, so Android asks you to allow installing from an unknown source. The file names carry no version, so `releases/latest/download/warriors-admin.apk` and `warriors-member.apk` always point at the newest build.
 
-## System Architecture
+## What I would do next
 
-```text
-                    ┌─────────────────┐
-                    │     Backend     │
-                    │   RESTful API   │
-                    └────────┬────────┘
-                             │
-             ┌───────────────┼───────────────┐
-             │                               │
-             ▼                               ▼
-    ┌────────────────┐             ┌────────────────┐
-    │ Admin Frontend │             │ User Mobile App│
-    │ Web & Mobile   │             │ Gym Members    │
-    └────────────────┘             └────────────────┘
-```
+- **Take real payments.** The checkout is simulated. A Chapa client exists in [`backend/utils/payment.js`](backend/utils/payment.js) but is not wired in.
+- **Test the front ends.** The API has 99 tests; the three apps have lint, type checks and a build, but no tests of their own. Playwright against the web builds would be the first step.
+- **Move uploads off local disk** to object storage such as Cloudflare R2, so photos and videos survive a restart.
+- **Add logging and error reporting.** Structured request logs and something like Sentry. Today there are console logs only.
+- **Sign the Android builds** with a real key and publish them through Google Play.
+- **Support more than one gym.** The data model assumes a single gym.
+- **Polish the small-screen layouts** of a few admin tables.
 
-## Key Features
+## Documentation
 
-* Secure Authentication
-* Membership Management
-* Attendance Tracking
-* Payment Management
-* Notification System
-* Admin Dashboard
-* Mobile Access for Members
-* Scalable Architecture
-
-## Preview
-
-### Admin
-| Admin Dashboard | Mobile Home |
-|----------------|------------|
-<img width="1080" height="2340" alt="Screenshot_20260601_082250_Warriors-Admin" src="https://github.com/user-attachments/assets/76237eb8-0ec1-4e3e-9547-3a80e5e9f52a" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082257_Warriors-Admin" src="https://github.com/user-attachments/assets/07f59d1f-7c1f-4af1-8329-ee64b6bae5bf" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082309_Warriors-Admin" src="https://github.com/user-attachments/assets/3fb8779b-656b-4c4d-90e6-96e8a74c8b47" />
-
-
-### Member
-| Member Management | Payments |
-|------------------|----------|
-<img width="1080" height="2340" alt="Screenshot_20260601_082406_Warriors" src="https://github.com/user-attachments/assets/9725f388-a800-4cdf-8b23-e5e3a97129ab" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082410_Warriors" src="https://github.com/user-attachments/assets/f17e983b-5a1c-4cb2-b998-4b013b8b5357" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082430_Warriors" src="https://github.com/user-attachments/assets/383c6add-bb8b-4dcb-affd-fe1abd200372" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082507_Warriors" src="https://github.com/user-attachments/assets/261a721b-949d-46b7-8984-f9ddc40f93bc" />
-<img width="1080" height="2969" alt="Screenshot_20260601_082512_Warriors" src="https://github.com/user-attachments/assets/364830d7-f44f-42d6-9981-87638128fdc8" />
-<img width="1080" height="2340" alt="Screenshot_20260601_082537_Warriors" src="https://github.com/user-attachments/assets/d0edb0fa-527f-4589-a107-5ca46b4f114b" />
+| | |
+| --- | --- |
+| [backend/README.md](backend/README.md) | API setup, configuration, how the membership rules work |
+| [docs/deploy.md](docs/deploy.md) | Hosting setup, step by step |
+| [docs/adr/](docs/adr) | Architecture decision records |
+| [SECURITY.md](SECURITY.md) | What is protected, and how to report a problem |
 
 ## Contributing
 
-Contributions are welcome. Please create a feature branch, commit your changes, and submit a pull request for review.
+Create a feature branch off `main`, use [Conventional Commits](https://www.conventionalcommits.org) for messages, and open a pull request. The `CI` check has to pass before it can merge.
+
+## Author
+
+Built by **Bereket Zeselassie**: [GitHub](https://github.com/bakiizese) · [LinkedIn](https://www.linkedin.com/in/bereket-zeselassie-embaye) · [Telegram](https://t.me/bereket_zeselassie) · [email](mailto:bereketzeselassie@gmail.com)
 
 ## License
 
-This project is licensed under the MIT License.
-
-
+MIT. See [LICENSE](LICENSE).
