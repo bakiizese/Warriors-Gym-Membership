@@ -29,6 +29,15 @@ export default function Root({ children }) {
 }
 
 const wideScreenColumn = `
+/* #root expects to be a direct child of body and sized by the height:100%
+   reset above. Wrapping it in #phone-stage for the desktop frame broke that
+   below 700px, where #phone-stage has no other rule and defaults to an
+   auto-height block, so #root's height:100% resolved to nothing and every
+   flex-1 chain in the app collapsed. This keeps #root's real, native mobile
+   rendering working; the media query below overrides it for the frame. */
+#phone-stage {
+  height: 100%;
+}
 @media (min-width: 700px) {
   body {
     background: #0b0b0d;
