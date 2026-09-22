@@ -21,7 +21,7 @@ import Age from "./Attributes/Age";
 import Gender from "./Attributes/Gender";
 import Height from "./Attributes/Height";
 import Weight from "./Attributes/Weight";
-import LangingPage from "./LangingPage";
+import LandingPage from "./LandingPage";
 import SelectLanguage from "./SelectLanguage";
 import SignIn from "./Signs/SignIn";
 import SignUp from "./Signs/SignUp";
@@ -64,7 +64,7 @@ const Auth = ({ path } = {}) => {
       "Please select your weight",
     ],
     page: [
-      <LangingPage key="landing" />,
+      <LandingPage key="landing" />,
       <SignIn
         key="sign-in"
         setPhoneNumber={setPhoneNumber}
@@ -151,9 +151,26 @@ const Auth = ({ path } = {}) => {
     }
   };
 
+  const formatDate = (createdAt, onlyTime = false) => {
+    const date = new Date(createdAt);
+    if (onlyTime) {
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   const fetchRegister = async () => {
     setLoadingStat(true);
     setErrorMessage("none");
+    const regstration = formatDate(Date.now())
+
     try {
       const res = await ApiClient.post("/auth/sign-up/member", {
         full_name: fullName,
@@ -164,6 +181,7 @@ const Auth = ({ path } = {}) => {
         age: selectedAge,
         password: password,
         language: language,
+        registration_Date: regstration
       });
       console.log("fetch regitration", res.data.user);
       router.replace({ pathname: "/AuthPage", params: { path: 1 } });
@@ -236,14 +254,15 @@ const Auth = ({ path } = {}) => {
     <TouchableWithoutFeedback
       onPress={Keyboard.dismiss}
       accessible={false}
-      className=""
+      className="flex-1"
     >
       <KeyboardAvoidingView
+        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <View className="flex flex-col h-full">
-          <View className="mx-7 flex flex-col gap-8">
+        <View className="flex-1 flex-col h-auto">
+          <View className="mx-7 flex flex-col gap-12">
             <View className="">
               <View className="flex flex-row justify-center mt-8 py-4 items-end gap-2  border-b-[2px] border-[#FFFFFF]/20">
                 <Text className="text-white text-[18px] font-jura-bold">
@@ -284,8 +303,8 @@ const Auth = ({ path } = {}) => {
                 </View>
               )}
             </View>
-            <View>
-              <Text className="text-white text-[30px] font-jura-bold">
+            <View className="">
+              <Text className="text-white text-[30px] w-1/2 font-jura-bold">
                 {t(`auth.${authNavigation.title[pageNumber]}`)}
               </Text>
               <Text className="text-white text-[22px] font-jura-bold">
@@ -297,7 +316,7 @@ const Auth = ({ path } = {}) => {
             <View className="flex-1 justify-center">
               {authNavigation.page[pageNumber]}
             </View>
-            <View className=" justify-end py-6 gap-2">
+            <View className="justify-end py-6 gap-2">
               <TouchableOpacity
                 activeOpacity={0.7}
                 className="bg-[#56C556]/70 h-[50px] mx-7 rounded-full justify-center items-center flex flex-row gap-2"
@@ -351,8 +370,8 @@ const Auth = ({ path } = {}) => {
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+      </KeyboardAvoidingView >
+    </TouchableWithoutFeedback >
   );
 };
 

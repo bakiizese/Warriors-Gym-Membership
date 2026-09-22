@@ -68,8 +68,9 @@ const Sign = ({
           value={phoneNumber}
           onChangeText={(text) => setPhoneNumber(text.replace(/\s/g, ""))}
           placeholder="Phone number"
+          inputMode="tel"
           placeholderTextColor={"#FFFFFF6E"}
-          className="text-white text-[18px] font-jura w-[90%]"
+          className="text-white text-[18px] h-full font-jura w-[90%]"
         />
       </View>
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">

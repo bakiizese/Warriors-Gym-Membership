@@ -72,9 +72,8 @@ export function LiveStage() {
               type="button"
               aria-selected={tab === key}
               onClick={() => setTab(key)}
-              className={`rounded-full px-5 py-2 font-display text-sm font-bold tracking-wide transition ${
-                tab === key ? "bg-red text-white" : "text-muted hover:text-text"
-              }`}
+              className={`rounded-full px-5 py-2 font-display text-sm font-bold tracking-wide transition ${tab === key ? "bg-red text-white" : "text-muted hover:text-text"
+                }`}
             >
               {tabs[key].label}
             </button>

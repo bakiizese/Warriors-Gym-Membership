@@ -66,14 +66,17 @@ export async function signUp(req, res, userType = req.params.userType) {
 
   for (const key of requiredFields[userType]) {
     if (!body[key]) {
+      console.log(key)
       throw new HttpError(400, key + " is missing");
     }
   }
+
   for (const key of numericFields) {
     if (userType === "member" && !Number.isFinite(Number(body[key]))) {
       throw new HttpError(400, key + " must be a number");
     }
   }
+
   if (String(body.password).length < MIN_PASSWORD_LENGTH) {
     throw new HttpError(
       400,

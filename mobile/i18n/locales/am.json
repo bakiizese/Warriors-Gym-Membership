@@ -54,7 +54,9 @@
     "Attendance Log": "የመግቢያ መዝገብ",
     "Edit": "አስተካክል",
     "Male": "ወንድ",
+    "male": "ወንድ",
     "Female": "ሴት",
+    "female": "ሴት",
     "Logout": "ውጣ"
   },
   "membership": {
@@ -134,7 +136,7 @@
     "Status": "ሁኔታ"
   },
   "landingPage": {
-    "Address: Tigray, Axum, Edaga Hamus": "አድራሻ፡ ትግራይ፣ አክሱም፣ እዳጋ ሓሙስ",
+    "Address": "አድራሻ፡",
     "Contact:": "Contact:"
   }
 }

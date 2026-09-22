@@ -427,7 +427,7 @@ export default function MemberDashboard() {
 
   return (
     <AppGradient>
-      <SafeAreaView className="flex-1 relative py-3">
+      <SafeAreaView className="flex-1 relative mt-10">
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -472,10 +472,10 @@ export default function MemberDashboard() {
                   source={
                     userData?.image
                       ? {
-                          uri: isFullUri(userData?.image)
-                            ? userData?.image
-                            : null,
-                        }
+                        uri: isFullUri(userData?.image)
+                          ? userData?.image
+                          : null,
+                      }
                       : profile
                   }
                   resizeMode="contain"
@@ -604,15 +604,15 @@ export default function MemberDashboard() {
                     {Object.keys(membership).length === 0
                       ? t("dashboard.None")
                       : i18n.exists(
-                            `dashboard.${membership.membershipPlan?.membership_name}`,
-                          )
+                        `dashboard.${membership.membershipPlan?.membership_name}`,
+                      )
                         ? membership.membershipPlan?.duration_days / 30 +
-                          " " +
-                          t(
-                            `dashboard.${membership.membershipPlan?.membership_name}`,
-                          )
+                        " " +
+                        t(
+                          `dashboard.${membership.membershipPlan?.membership_name}`,
+                        )
                         : // Plans the app has no translation for show their own name.
-                          membership.membershipPlan?.membership_name}
+                        membership.membershipPlan?.membership_name}
                   </Text>
                 </View>
                 <View className="flex flex-row items-end gap-2">
@@ -651,12 +651,12 @@ export default function MemberDashboard() {
                   setPressed("membership&payment");
                   Object.keys(membership).length > 0
                     ? router.push({
-                        pathname: "./MemberPages/Payment",
-                        params: {
-                          membership: JSON.stringify(membership),
-                          membershipPlan: {},
-                        },
-                      })
+                      pathname: "./MemberPages/Payment",
+                      params: {
+                        membership: JSON.stringify(membership),
+                        membershipPlan: {},
+                      },
+                    })
                     : router.push("./MemberPages/Membership");
                 }}
                 disabled={pressed === "membership&payment"}

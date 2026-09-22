@@ -260,7 +260,7 @@ const ManageWorkoutDetail = ({ workoutTitle }) => {
           <Confirmation
             setRemove={setConfirm}
             title="?"
-            content="Do you want to delete this?"
+            content="Are you sure you want to delete this?"
             onConfirmed={() => deleteWorkout(confirm)}
           />
         )}

@@ -206,7 +206,7 @@ const ProgramAndPlans = () => {
             <Confirmation
               setRemove={setConfirm}
               title="Are you sure?"
-              content="You want to delete this program"
+              content="Are you sure you want to delete this?"
               onConfirmed={() => removePrograms(confirm)}
             />
           )}

@@ -186,10 +186,10 @@ const EditMember = ({
                       ? { uri: localImage }
                       : personalData?.image
                         ? {
-                            uri: isFullUri(personalData.image)
-                              ? personalData.image
-                              : `${ADDRESS}/${personalData.image}`,
-                          }
+                          uri: isFullUri(personalData.image)
+                            ? personalData.image
+                            : `${ADDRESS}/${personalData.image}`,
+                        }
                         : profile
                   }
                   resizeMode="contain"
@@ -201,7 +201,7 @@ const EditMember = ({
                   className="h-6 w-6 m-2 p-2 absolute right-1  top-1"
                 />
               </TouchableOpacity>
-              <View className="bg-[#2A2A2C]/90 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center justify-between">
+              <View className="bg-[#2A2A2C]/90 z-50 rounded-2xl px-2 h-[48px] w-full flex flex-row items-center justify-between">
                 <View className="bg-[#4CA24F] py-[2px]  rounded-xl  w-[160px] items-center">
                   <Text className="text-white text-[18px] font-jura-bold">
                     {t("profile.Select Language")}

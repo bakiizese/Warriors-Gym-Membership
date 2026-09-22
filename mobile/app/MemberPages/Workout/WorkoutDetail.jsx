@@ -61,7 +61,7 @@ const WorkoutDetail = () => {
             <Pressable onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={33} color="black" />
             </Pressable>
-            <Text className="text-white h-10 pl-1 w-[90%] leading-none text-[30px] font-jura-bold">
+            <Text className="text-white h-8 overflow-hidden pl-1 w-[90%] leading-none text-[30px] font-jura-bold">
               {t(`workout.${workoutTitle}`)} {t("workout.Workout Steps")}
             </Text>
           </View>
@@ -70,7 +70,7 @@ const WorkoutDetail = () => {
               <View className="w-full h-[43%] p-2 border-b-[1px] border-black relative">
                 <View className="flex-1 bg-black justify-center items-center rounded-2xl">
                   {isFullUri(currentVideo?.video?.path) ||
-                  typeof currentVideo?.video?.path === "number" ? (
+                    typeof currentVideo?.video?.path === "number" ? (
                     <>
                       <Video
                         source={

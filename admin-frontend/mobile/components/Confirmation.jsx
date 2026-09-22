@@ -64,7 +64,7 @@ const Confirmation = ({
                   />
                 </View>
               ) : (
-                <Text className="text-white leading-none tracking-[3px] text-[30px] font-jura-bold]">
+                <Text className="text-white leading-none tracking-[3px] text-[30px] font-jura-bold] flex">
                   {t("components.Yes")}
                 </Text>
               )}
@@ -73,7 +73,7 @@ const Confirmation = ({
               onPress={() => setRemove(false)}
               className="border-[#00FF00] border-2 py-1 px-4 rounded-xl"
             >
-              <Text className="text-white leading-none  tracking-[3px] text-[30px] font-jura-bold]">
+              <Text className="text-white leading-none  tracking-[3px] text-[30px] font-jura-bold] flex">
                 {t("components.No")}
               </Text>
             </TouchableOpacity>

@@ -604,7 +604,7 @@ const AdminDashboard = () => {
           }
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          <View className="flex-1">
+          <View className="flex-1 pb-2 pt-10 px-4">
             <View className="flex flex-row justify-between items-center border-b-[1px] border-[#7E7676] h-[75px]">
               <View className="flex">
                 <Text className="text-white text-[22px] font-jura leading-none tracking-[2px]">
@@ -626,10 +626,10 @@ const AdminDashboard = () => {
                   source={
                     adminData?.image
                       ? {
-                          uri: isFullUri(adminData?.image)
-                            ? adminData?.image
-                            : `${ADDRESS}/${adminData.image}`,
-                        }
+                        uri: isFullUri(adminData?.image)
+                          ? adminData?.image
+                          : `${ADDRESS}/${adminData.image}`,
+                      }
                       : profile
                   }
                   resizeMode="contain"
@@ -728,12 +728,12 @@ const AdminDashboard = () => {
                       {!["Not Found", "Already Attended", ""].includes(
                         scanned,
                       ) && (
-                        <AntDesign
-                          name="check-circle"
-                          size={24}
-                          color="green"
-                        />
-                      )}
+                          <AntDesign
+                            name="check-circle"
+                            size={24}
+                            color="green"
+                          />
+                        )}
                     </View>
                   )}
                   <View className="flex-1 rounded-2xl overflow-hidden">

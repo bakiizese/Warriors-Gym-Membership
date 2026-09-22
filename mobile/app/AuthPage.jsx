@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 export default function AuthPage() {
   const router = useRouter();
 
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
 
   const { path } = useLocalSearchParams();
 

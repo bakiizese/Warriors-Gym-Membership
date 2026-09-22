@@ -219,11 +219,11 @@ const Payment = () => {
                 <Text className="text-white leading-none text-[30px] font-jura-bold]">
                   {newMembership
                     ? membershipData.duration_days / 30 +
-                      " " +
-                      membershipData.membership_name
+                    " " +
+                    membershipData.membership_name
                     : membershipData.membershipPlan.duration_days / 30 +
-                      " " +
-                      membershipData.membershipPlan.membership_name}
+                    " " +
+                    membershipData.membershipPlan.membership_name}
                 </Text>
               </View>
               <View className="flex gap-2 my-4">

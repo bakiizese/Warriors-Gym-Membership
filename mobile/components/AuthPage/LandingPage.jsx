@@ -4,7 +4,7 @@ import { ImageBackground } from "../AppImage";
 import logo from "@/assets/images/logo.png";
 import { useTranslation } from "react-i18next";
 
-const LangingPage = () => {
+const LandingPage = () => {
   const { t } = useTranslation();
 
   return (
@@ -12,7 +12,7 @@ const LangingPage = () => {
       <View className="flex-1">
         <ImageBackground
           source={logo}
-          className="flex-1"
+          className="flex h-full w-full"
           resizeMode="contain"
         />
       </View>
@@ -20,10 +20,10 @@ const LangingPage = () => {
         <View className="bg-[#FFFFFF] h-2  rounded-full" />
         <View className="">
           <Text className="text-white text-[15px] font-jura-bold">
-            {t("landingPage.Address Tigray, Axum, Edaga Hamus")}
+            {t("landingPage.Address")} ----, ----, ----
           </Text>
           <Text className="text-white text-[15px] font-jura-bold">
-            {t("landingPage.Contact")} +251919847725, +251938985735
+            {t("landingPage.Contact")} +251-9, +251-9
           </Text>
         </View>
       </View>
@@ -31,4 +31,4 @@ const LangingPage = () => {
   );
 };
 
-export default LangingPage;
+export default LandingPage;
