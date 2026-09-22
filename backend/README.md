@@ -96,5 +96,5 @@ Tests cover auth and role separation, password-hash exposure, sign-up validation
 ## Known limitations
 
 - Payments are simulated (see above).
-- The mobile apps don't yet sign out on a 401, so tokens live 30 days by default; shorten `JWT_EXPIRES_IN` once they do.
+- Tokens are stateless and cannot be revoked before they expire. Both mobile apps sign out on a 401, so `JWT_EXPIRES_IN` can be short: the hosted demo uses `7d`, while the default stays at `30d` for local use.
 - Uploaded files live on local disk. On hosts with an ephemeral filesystem, mount a volume at `UPLOADS_DIR` or accept that uploads reset on deploy.
