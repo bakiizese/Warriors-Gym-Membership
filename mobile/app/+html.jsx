@@ -20,8 +20,8 @@ export default function Root({ children }) {
         {/* Only shown on a wide window, one on each side of the frame: real
             phone navigation doesn't apply to a web page, so say so. */}
         <div className="frame-note">
-          You're using a phone app inside a browser tab. Navigate with the
-          app's own back arrow and buttons
+          You&apos;re using a phone app inside a browser tab. Navigate with the
+          app&apos;s own back arrow and buttons
         </div>
         {/* The app (#root, inside `children`) renders at its real, native
             size and is visually scaled down as a whole to fit the window —
@@ -30,7 +30,7 @@ export default function Root({ children }) {
             can't react to. This wrapper carries the bezel; #root does not. */}
         <div id="phone-stage">{children}</div>
         <div className="frame-note">
-          your browser's back/forward button doesn't know about the app's
+          your browser&apos;s back/forward button doesn&apos;t know about the app&apos;s
           screens and can leave it stuck.
         </div>
       </body>
