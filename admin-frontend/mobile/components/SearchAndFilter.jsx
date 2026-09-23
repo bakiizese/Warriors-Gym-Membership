@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FilterIcon, SearchIcon } from "@/components/icons";
 
 const SearchAndFilter = ({ filterSelections, search }) => {
   const [filterDataBy, setFilterDataBy] = useState(filterSelections[0]);
@@ -25,7 +25,7 @@ const SearchAndFilter = ({ filterSelections, search }) => {
         <TouchableOpacity
           onPress={() => search(filterDataBy, isAscending, null, searchText)}
         >
-          <Ionicons name="search" size={24} color="black" />
+          <SearchIcon size={24} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -66,8 +66,7 @@ const SearchAndFilter = ({ filterSelections, search }) => {
             search(filterDataBy, newValue, null, searchText);
           }}
         >
-          <Ionicons
-            name="filter"
+          <FilterIcon
             size={24}
             color="black"
             style={{

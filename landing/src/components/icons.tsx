@@ -42,3 +42,11 @@ export const PlayIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
   </svg>
 );
+
+export const InfoIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <line x1="12" y1="11" x2="12" y2="16" />
+    <circle cx="12" cy="7.5" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);

@@ -1,4 +1,4 @@
-import { AntDesign, Entypo, Ionicons } from "@expo/vector-icons";
+import { ArrowBackIcon, CheckCircleIcon, CircleWithCrossIcon } from "@/components/icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -161,8 +161,7 @@ const Payment = () => {
             {loading && (
               <View className="w-full h-full  bg-black/20 absolute inset-0 z-20 justify-center ">
                 {loading === "paid" ? (
-                  <AntDesign
-                    name="check-circle"
+                  <CheckCircleIcon
                     size={48}
                     color="green"
                     className="self-center"
@@ -172,8 +171,7 @@ const Payment = () => {
                     activeOpacity={0.8}
                     onPress={() => setLoading(false)}
                   >
-                    <Entypo
-                      name="circle-with-cross"
+                    <CircleWithCrossIcon
                       size={64}
                       color="red"
                       className="self-center"
@@ -195,7 +193,7 @@ const Payment = () => {
             )}
             <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
               <Pressable onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={33} color="black" />
+                <ArrowBackIcon size={33} color="black" />
               </Pressable>
               <Text className="text-white h-10  pl-2 leading-none text-[30px] font-jura-bold">
                 {t("payment.Payment")}

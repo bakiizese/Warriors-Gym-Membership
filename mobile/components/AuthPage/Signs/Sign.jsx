@@ -53,35 +53,34 @@ const Sign = ({
       {signType === "signUp" && (
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
           <Image source={profileR} resizeMode="contain" className="h-7 w-7" />
-          <TextInput
+          <input
+            type="text"
             value={fullName}
-            onChangeText={(text) => setFullName?.(text)}
+            onChange={(e) => setFullName?.(e.target.value)}
             placeholder="Full name"
-            placeholderTextColor={"#FFFFFF6E"}
-            className="text-white text-[18px] font-jura w-[90%]"
+            className="text-white text-[18px] font-jura w-[90%] bg-transparent"
           />
         </View>
       )}
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={phone} resizeMode="contain" className="h-7 w-7" />
-        <TextInput
+        <input
           value={phoneNumber}
-          onChangeText={(text) => setPhoneNumber(text.replace(/\s/g, ""))}
+          onChange={(e) => setPhoneNumber?.(e.target.value)}
           placeholder="Phone number"
-          inputMode="tel"
-          placeholderTextColor={"#FFFFFF6E"}
-          className="text-white text-[18px] h-full font-jura w-[90%]"
+          type="tel"
+          className="text-white text-[18px] h-full font-jura w-[90%] bg-transparent"
         />
       </View>
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={key} resizeMode="contain" className="h-7 w-7" />
-        <TextInput
-          secureTextEntry={isInvisible}
+        <input
+          security={isInvisible}
           value={password}
-          onChangeText={(text) => setPassword(text)}
+          onChange={(e) => setPassword?.(e.target.value)}
           placeholder="Password"
-          placeholderTextColor={"#FFFFFF6E"}
-          className="text-white text-[18px] font-jura w-[75%]"
+          type={isInvisible ? "password" : "text"}
+          className="text-white text-[18px] font-jura w-[75%] bg-transparent"
         />
         <TouchableOpacity
           activeOpacity={0.8}
