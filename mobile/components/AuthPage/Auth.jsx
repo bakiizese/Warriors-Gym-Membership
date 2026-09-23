@@ -40,18 +40,6 @@ const Auth = ({ path } = {}) => {
   const [selectedHeight, setSelectedHeight] = useState(160);
   const [selectedWeight, setSelectedWeight] = useState(160);
 
-  const [userData, setUserData] = useState({
-    full_name: "",
-    phone_number: "",
-    password: "",
-    language: "English",
-    gender: "Male",
-    age: "",
-    weight: "",
-    height: "",
-    image: "",
-  });
-
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingStat, setLoadingStat] = useState(false);
   const { t } = useTranslation();
