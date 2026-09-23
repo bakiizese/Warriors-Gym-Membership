@@ -53,10 +53,10 @@ const Sign = ({
       {signType === "signUp" && (
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
           <Image source={profileR} resizeMode="contain" className="h-7 w-7" />
-          <input
-            type="text"
+          <TextInput
+            inputMode="text"
             value={fullName}
-            onChange={(e) => setFullName?.(e.target.value)}
+            onChangeText={(text) => setFullName(text)}
             placeholder="Full name"
             className="text-white text-[18px] font-jura w-[90%] bg-transparent"
           />
@@ -64,22 +64,22 @@ const Sign = ({
       )}
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={phone} resizeMode="contain" className="h-7 w-7" />
-        <input
+        <TextInput
           value={phoneNumber}
-          onChange={(e) => setPhoneNumber?.(e.target.value)}
+          onChangeText={(text) => setPhoneNumber(text)}
           placeholder="Phone number"
-          type="tel"
-          className="text-white text-[18px] h-full font-jura w-[90%] bg-transparent"
+          inputMode="tel"
+          className="text-white text-[18px] font-jura w-[90%] bg-transparent"
         />
       </View>
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={key} resizeMode="contain" className="h-7 w-7" />
-        <input
+        <TextInput
           security={isInvisible}
           value={password}
-          onChange={(e) => setPassword?.(e.target.value)}
+          onChangeText={(text) => setPassword(text)}
           placeholder="Password"
-          type={isInvisible ? "password" : "text"}
+          inputMode="text"
           className="text-white text-[18px] font-jura w-[75%] bg-transparent"
         />
         <TouchableOpacity
