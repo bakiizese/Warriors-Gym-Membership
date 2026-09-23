@@ -548,7 +548,6 @@ export default function MemberDashboard() {
                         size={300}
                         color="black"
                         backgroundColor="white"
-                        onPress={() => setIsProcess("nfc")}
                       />
                     </TouchableOpacity>
                   )}

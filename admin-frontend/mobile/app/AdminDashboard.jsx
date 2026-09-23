@@ -1,4 +1,4 @@
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { CheckCircleIcon } from "@/components/icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import axios from "axios";
@@ -728,8 +728,7 @@ const AdminDashboard = () => {
                       {!["Not Found", "Already Attended", ""].includes(
                         scanned,
                       ) && (
-                          <AntDesign
-                            name="check-circle"
+                          <CheckCircleIcon
                             size={24}
                             color="green"
                           />

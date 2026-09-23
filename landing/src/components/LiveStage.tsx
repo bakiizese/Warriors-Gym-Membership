@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { config } from "../config";
 import { passes, tours } from "../content";
-import { PlayIcon } from "./icons";
+import { InfoIcon, PlayIcon } from "./icons";
 import { PhoneFrame } from "./PhoneFrame";
 
 type Tab = "member" | "admin";
@@ -94,24 +94,32 @@ export function LiveStage() {
         </p>
       </div>
 
-      <PhoneFrame className="w-[300px] sm:w-[320px]">
-        {(Object.keys(tabs) as Tab[]).map((key) => (
-          <div key={key} role="tabpanel" hidden={tab !== key} className={tab === key ? "absolute inset-0" : ""}>
-            {started[key] ? (
-              <ScaledIframe src={tabs[key].url} title={`${tabs[key].app} app, live`} />
-            ) : (
-              <div className="absolute inset-0">
-                <img src={tabs[key].poster} alt="" className="h-full w-full object-cover object-top opacity-55" />
-                <div className="absolute inset-0 grid place-items-center bg-black/40">
-                  <button type="button" onClick={() => setStarted((s) => ({ ...s, [key]: true }))} className="btn btn-red">
-                    <PlayIcon width={16} height={16} /> Start live preview
-                  </button>
+      <div>
+        <PhoneFrame className="w-[300px] sm:w-[320px]">
+          {(Object.keys(tabs) as Tab[]).map((key) => (
+            <div key={key} role="tabpanel" hidden={tab !== key} className={tab === key ? "absolute inset-0" : ""}>
+              {started[key] ? (
+                <ScaledIframe src={tabs[key].url} title={`${tabs[key].app} app, live`} />
+              ) : (
+                <div className="absolute inset-0">
+                  <img src={tabs[key].poster} alt="" className="h-full w-full object-cover object-top opacity-55" />
+                  <div className="absolute inset-0 grid place-items-center bg-black/40">
+                    <button type="button" onClick={() => setStarted((s) => ({ ...s, [key]: true }))} className="btn btn-red">
+                      <PlayIcon width={16} height={16} /> Start live preview
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </PhoneFrame>
+              )}
+            </div>
+          ))}
+        </PhoneFrame>
+        <div className="mt-4 flex max-w-[320px] items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2">
+          <InfoIcon width={15} height={15} className="mt-0.5 shrink-0 text-gold" />
+          <p className="text-xs leading-relaxed text-text">
+            This is a real mobile app, not a page — use its own back button, not your browser's.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

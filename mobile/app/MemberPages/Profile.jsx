@@ -1,4 +1,4 @@
-import { Entypo, Ionicons } from "@expo/vector-icons";
+import { ArrowBackIcon, LogOutIcon } from "@/components/icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -221,7 +221,7 @@ const Profile = () => {
                   router.back();
                 }}
               >
-                <Ionicons name="arrow-back" size={33} color="black" />
+                <ArrowBackIcon size={33} color="black" />
               </Pressable>
               <Text className="text-white h-10pl-2 leading-none text-[30px] font-jura-bold">
                 {t("profile.Profile")}
@@ -231,7 +231,7 @@ const Profile = () => {
               onPress={() => setConfirmation(true)}
               className="rounded-2xl bg-[#777676] border-[1px] border-[#424141]/50 px-3 py-1"
             >
-              <Entypo color="black" name="log-out" size={35} />
+              <LogOutIcon color="black" size={35} />
             </TouchableOpacity>
           </View>
           {confirmation && (

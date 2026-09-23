@@ -54,11 +54,11 @@ const Sign = ({
         <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
           <Image source={profileR} resizeMode="contain" className="h-7 w-7" />
           <TextInput
+            inputMode="text"
             value={fullName}
-            onChangeText={(text) => setFullName?.(text)}
+            onChangeText={(text) => setFullName(text)}
             placeholder="Full name"
-            placeholderTextColor={"#FFFFFF6E"}
-            className="text-white text-[18px] font-jura w-[90%]"
+            className="text-white text-[18px] font-jura w-[90%] bg-transparent"
           />
         </View>
       )}
@@ -66,22 +66,21 @@ const Sign = ({
         <Image source={phone} resizeMode="contain" className="h-7 w-7" />
         <TextInput
           value={phoneNumber}
-          onChangeText={(text) => setPhoneNumber(text.replace(/\s/g, ""))}
+          onChangeText={(text) => setPhoneNumber(text)}
           placeholder="Phone number"
           inputMode="tel"
-          placeholderTextColor={"#FFFFFF6E"}
-          className="text-white text-[18px] h-full font-jura w-[90%]"
+          className="text-white text-[18px] font-jura w-[90%] bg-transparent"
         />
       </View>
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={key} resizeMode="contain" className="h-7 w-7" />
         <TextInput
-          secureTextEntry={isInvisible}
+          security={isInvisible}
           value={password}
           onChangeText={(text) => setPassword(text)}
           placeholder="Password"
-          placeholderTextColor={"#FFFFFF6E"}
-          className="text-white text-[18px] font-jura w-[75%]"
+          inputMode="text"
+          className="text-white text-[18px] font-jura w-[75%] bg-transparent"
         />
         <TouchableOpacity
           activeOpacity={0.8}

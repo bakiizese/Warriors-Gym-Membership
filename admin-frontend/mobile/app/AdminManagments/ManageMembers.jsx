@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowBackIcon } from "@/components/icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
@@ -362,7 +362,7 @@ const ManageMembers = () => {
         <View className="flex-1">
           <View className="flex flex-row bg-black/20 w-full h-[110px] items-end p-3 pb-0.5">
             <Pressable onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={33} color="black" />
+              <ArrowBackIcon size={33} color="black" />
             </Pressable>
             <Text className="text-white h-10 pl-2 leading-none text-[30px] font-jura-bold">
               {t("manageMember.Manage Members")}
