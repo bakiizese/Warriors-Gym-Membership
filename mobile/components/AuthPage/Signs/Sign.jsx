@@ -75,7 +75,7 @@ const Sign = ({
       <View className="bg-[#2A2A2C]/90 rounded-2xl px-5 h-[45px] w-full flex flex-row items-center gap-3">
         <Image source={key} resizeMode="contain" className="h-7 w-7" />
         <TextInput
-          security={isInvisible}
+          secureTextEntry={isInvisible}
           value={password}
           onChangeText={(text) => setPassword(text)}
           placeholder="Password"

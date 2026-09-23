@@ -252,7 +252,7 @@ const Auth = ({ path } = {}) => {
   };
   return (
     <TouchableWithoutFeedback
-      onPress={Keyboard.dismiss}
+      onPress={Platform.OS === "web" ? undefined : Keyboard.dismiss}
       accessible={false}
       className="flex-1"
     >
