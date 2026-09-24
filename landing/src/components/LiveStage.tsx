@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { config } from "../config";
-import { passes, tours } from "../content";
+import { accountNotes, passes, tours } from "../content";
 import { InfoIcon, PlayIcon } from "./icons";
 import { PhoneFrame } from "./PhoneFrame";
 
@@ -45,6 +45,24 @@ function ScaledIframe({ src, title }: { src: string; title: string }) {
         className="absolute left-0 top-0 border-0 bg-black"
         style={{ width: 390, height: 844, transform: `scale(${scale})`, transformOrigin: "top left" }}
       />
+    </div>
+  );
+}
+
+function InfoNote({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2">
+      <InfoIcon width={15} height={15} className="mt-0.5 shrink-0 text-gold" />
+      <p className="text-xs leading-relaxed text-text">{children}</p>
+    </div>
+  );
+}
+
+function PreviewNotes({ tab, className }: { tab: Tab; className: string }) {
+  return (
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <InfoNote>This is a real mobile app, not a page — use its own back button, not your browser's.</InfoNote>
+      <InfoNote>{accountNotes[tab]}</InfoNote>
     </div>
   );
 }
@@ -94,7 +112,7 @@ export function LiveStage() {
         </p>
       </div>
 
-      <div>
+      <div className="relative">
         <PhoneFrame className="w-[300px] sm:w-[320px]">
           {(Object.keys(tabs) as Tab[]).map((key) => (
             <div key={key} role="tabpanel" hidden={tab !== key} className={tab === key ? "absolute inset-0" : ""}>
@@ -113,12 +131,9 @@ export function LiveStage() {
             </div>
           ))}
         </PhoneFrame>
-        <div className="mt-4 flex max-w-[320px] items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2">
-          <InfoIcon width={15} height={15} className="mt-0.5 shrink-0 text-gold" />
-          <p className="text-xs leading-relaxed text-text">
-            This is a real mobile app, not a page — use its own back button, not your browser's.
-          </p>
-        </div>
+        {/* Beside the phone, as a narrow column, once the window has the free margin for it; under it otherwise. */}
+        <PreviewNotes tab={tab} className="mt-4 max-w-[320px] min-[1400px]:hidden" />
+        <PreviewNotes tab={tab} className="absolute left-full top-1/2 ml-4 hidden w-44 -translate-y-1/2 min-[1400px]:flex" />
       </div>
     </div>
   );

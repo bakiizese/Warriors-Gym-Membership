@@ -62,6 +62,55 @@ const WORKOUTS = [
   { type: "Arm", title: "One Arm Triceps Extension", level: "1", rep: 12, sets: 3, rest: "0.75", file: "arm-triceps-extension.mp4" },
   { type: "Abs", title: "Front Plank", level: "1", rep: 1, sets: 3, rest: "0.75", file: "abs-front-plank.mp4" },
   { type: "Glute & Hamstring", title: "Cable Donkey Kickback", level: "1", rep: 15, sets: 3, rest: "1", file: "glute-donkey-kickback.mp4" },
+
+  { type: "Chest", title: "Push-Up", level: "2", rep: 15, sets: 3, rest: "1", file: "chest-push-up.mp4" },
+  { type: "Chest", title: "Dumbbell Bench Press", level: "3", rep: 10, sets: 3, rest: "1.5", file: "chest-dumbbell-bench-press.mp4" },
+  { type: "Chest", title: "Incline Fly", level: "4", rep: 12, sets: 3, rest: "1", file: "chest-incline-fly.mp4" },
+  { type: "Chest", title: "Incline Bench Press", level: "5", rep: 8, sets: 4, rest: "2", file: "chest-incline-bench-press.mp4" },
+  { type: "Chest", title: "Bench Press", level: "6", rep: 8, sets: 4, rest: "2", file: "chest-bench-press.mp4" },
+
+  { type: "Back", title: "Lat Pulldown", level: "2", rep: 12, sets: 3, rest: "1", file: "back-pulldown.mp4" },
+  { type: "Back", title: "One Arm Row", level: "3", rep: 10, sets: 3, rest: "1", file: "back-one-arm-row.mp4" },
+  { type: "Back", title: "Bent Over Row", level: "4", rep: 10, sets: 3, rest: "1.5", file: "back-bent-over-row.mp4" },
+  { type: "Back", title: "Pull-Up", level: "5", rep: 8, sets: 3, rest: "1.5", file: "back-pull-up.mp4" },
+  { type: "Back", title: "Barbell Deadlift", level: "6", rep: 5, sets: 4, rest: "2", file: "back-deadlift.mp4" },
+
+  { type: "Shoulder", title: "Lateral Raise", level: "2", rep: 12, sets: 3, rest: "1", file: "shoulder-lateral-raise.mp4" },
+  { type: "Shoulder", title: "Front Raise", level: "3", rep: 12, sets: 3, rest: "1", file: "shoulder-front-raise.mp4" },
+  { type: "Shoulder", title: "Dumbbell Rear Delt Fly", level: "4", rep: 12, sets: 3, rest: "1", file: "shoulder-rear-delt-fly.mp4" },
+  { type: "Shoulder", title: "Seated Shoulder Press", level: "5", rep: 10, sets: 3, rest: "1.5", file: "shoulder-seated-press.mp4" },
+  { type: "Shoulder", title: "Dumbbell Arnold Press", level: "6", rep: 8, sets: 3, rest: "1.5", file: "shoulder-arnold-press.mp4" },
+
+  { type: "Arm", title: "Triceps Pushdown", level: "2", rep: 12, sets: 3, rest: "0.75", file: "arm-triceps-pushdown.mp4" },
+  { type: "Arm", title: "Hammer Curl", level: "3", rep: 12, sets: 3, rest: "0.75", file: "arm-hammer-curl.mp4" },
+  { type: "Arm", title: "Barbell Curl", level: "4", rep: 10, sets: 3, rest: "1", file: "arm-barbell-curl.mp4" },
+  { type: "Arm", title: "Preacher Curl", level: "5", rep: 10, sets: 3, rest: "1", file: "arm-preacher-curl.mp4" },
+  { type: "Arm", title: "Lying Triceps Extension (Skull Crusher)", level: "6", rep: 10, sets: 3, rest: "1", file: "arm-skull-crusher.mp4" },
+
+  { type: "Abs", title: "Crunch", level: "2", rep: 20, sets: 3, rest: "0.75", file: "abs-crunch.mp4" },
+  { type: "Abs", title: "Russian Twist", level: "3", rep: 20, sets: 3, rest: "0.75", file: "abs-russian-twist.mp4" },
+  { type: "Abs", title: "Lying Leg Raise", level: "4", rep: 12, sets: 3, rest: "0.75", file: "abs-lying-leg-raise.mp4" },
+  { type: "Abs", title: "Side Plank", level: "5", rep: 1, sets: 3, rest: "0.75", file: "abs-side-plank.mp4" },
+  { type: "Abs", title: "Hollow Hold", level: "6", rep: 1, sets: 3, rest: "0.75", file: "abs-hollow-hold.mp4" },
+
+  { type: "Glute & Hamstring", title: "Dumbbell Glute Bridge", level: "2", rep: 15, sets: 3, rest: "1", file: "glute-bridge.mp4" },
+  { type: "Glute & Hamstring", title: "Lunge", level: "3", rep: 12, sets: 3, rest: "1", file: "glute-lunge.mp4" },
+  { type: "Glute & Hamstring", title: "Good Morning", level: "4", rep: 10, sets: 3, rest: "1.5", file: "hamstring-good-morning.mp4" },
+  { type: "Glute & Hamstring", title: "Romanian Deadlift", level: "5", rep: 10, sets: 3, rest: "1.5", file: "glute-romanian-deadlift.mp4" },
+  { type: "Glute & Hamstring", title: "Barbell Hip Thrust", level: "6", rep: 10, sets: 4, rest: "2", file: "glute-hip-thrust.mp4" },
+
+  { type: "Quad", title: "Dumbbell Goblet Squat", level: "1", rep: 12, sets: 3, rest: "1", file: "quad-goblet-squat.mp4" },
+  { type: "Quad", title: "Squat", level: "2", rep: 10, sets: 4, rest: "2", file: "quad-squat.mp4" },
+  { type: "Quad", title: "Dumbbell Walking Lunges", level: "3", rep: 12, sets: 3, rest: "1", file: "quad-walking-lunges.mp4" },
+  { type: "Quad", title: "Dumbbell Bulgarian Split Squat", level: "4", rep: 10, sets: 3, rest: "1.5", file: "quad-bulgarian-split-squat.mp4" },
+  { type: "Quad", title: "Sled Hack Squat", level: "5", rep: 10, sets: 3, rest: "1.5", file: "quad-hack-squat.mp4" },
+  { type: "Quad", title: "Dumbbell Front Squat", level: "6", rep: 8, sets: 4, rest: "2", file: "quad-front-squat.mp4" },
+
+  { type: "Calf", title: "Standing Calf Raise", level: "1", rep: 15, sets: 3, rest: "0.75", file: "calf-standing-raise.mp4" },
+  { type: "Calf", title: "Seated Calf Raise", level: "2", rep: 15, sets: 3, rest: "0.75", file: "calf-seated-raise.mp4" },
+  { type: "Calf", title: "Dumbbell Single Leg Calf Raise", level: "3", rep: 12, sets: 3, rest: "0.75", file: "calf-single-leg-raise.mp4" },
+  { type: "Calf", title: "Hack Calf Raise", level: "4", rep: 12, sets: 3, rest: "1", file: "calf-hack-raise.mp4" },
+  { type: "Calf", title: "Sled Calf Press on Leg Press", level: "5", rep: 15, sets: 4, rest: "1", file: "calf-sled-press.mp4" },
 ];
 
 const PROGRAMS = [

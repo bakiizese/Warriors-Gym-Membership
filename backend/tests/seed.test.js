@@ -89,7 +89,12 @@ describe("seedDemoData", () => {
       password: demoAccounts.member.password,
     });
     const res = await api().get("/member/workoutPlan").set(bearer(token));
-    expect(res.body.length).toBe(6);
+    expect(res.body.length).toBe(47);
+    expect(Object.keys(res.body.workoutPlan)).toHaveLength(8);
+    for (const [type, plans] of Object.entries(res.body.workoutPlan)) {
+      expect(plans).toHaveLength(type === "Calf" ? 5 : 6);
+      for (const plan of plans) expect(plan.video.size).toBeGreaterThan(0);
+    }
     const chest = res.body.workoutPlan.Chest[0];
     expect(chest.video.path).toBe("seed-assets/videos/chest-cable-fly.mp4");
     expect(chest.video.size).toBeGreaterThan(0);
@@ -110,7 +115,7 @@ describe("seedDemoData", () => {
     await Admin.destroy({ where: {} });
 
     const result = await seedDemoData({ reset: true });
-    expect(result).toMatchObject({ seeded: true, members: 12, plans: 4, workouts: 6 });
+    expect(result).toMatchObject({ seeded: true, members: 12, plans: 4, workouts: 47 });
     expect(await Member.count()).toBe(12);
     expect(await Admin.count()).toBe(1);
     // identity restarts, so the demo member is always member 00001
