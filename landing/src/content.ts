@@ -94,6 +94,15 @@ export const tours = {
   ],
 } as const;
 
+// Shown beside the live preview. Keep in step with the frame notes in
+// mobile/app/+html.jsx and admin-frontend/mobile/app/+html.jsx.
+export const accountNotes = {
+  member:
+    "The two demo logins are shared and locked, so their password and phone number can't be changed. To edit freely, register a new member and change that account instead.",
+  admin:
+    "The two demo logins are shared and locked, so their password and phone number can't be changed. To edit freely, add a new member in Manage Members and change that one instead.",
+} as const;
+
 export const requestLog: ReadonlyArray<readonly [string, string, string]> = [
   ["POST", "/auth/sign-in/member", "200"],
   ["GET", "/member/membership", "200"],
@@ -131,7 +140,7 @@ export const notes: ReadonlyArray<{ tag: string; title: string; body: string }> 
   {
     tag: "Shared",
     title: "Everyone uses the same accounts.",
-    body: "The two demo logins are locked, so you can change any data but not the login itself, and nobody can lock the next visitor out.",
+    body: "The two demo logins are locked, so you can change any data but not the login itself, and nobody can lock the next visitor out. To edit an account freely, register a new member in the member app and change that one instead.",
   },
   {
     tag: "Debug-signed",

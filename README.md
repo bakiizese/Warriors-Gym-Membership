@@ -21,7 +21,7 @@ The landing page opens all three apps in the browser. Sign in with the demo logi
 | Admin (web and mobile) | `0900000001` | `demo1234` |
 | Member (mobile) | `0911000001` | `demo1234` |
 
-Everyone shares these accounts, so you can change any data but not the logins themselves. The data resets every night. The API runs on a free plan and sleeps when idle, so the first request can take about a minute; the status light on the landing page shows when it is awake.
+Everyone shares these accounts, so you can change any data but not the logins themselves. To edit an account freely, register a new member in the member app and change that one instead. The data resets every night. The API runs on a free plan and sleeps when idle, so the first request can take about a minute; the status light on the landing page shows when it is awake.
 
 ## What is in it
 

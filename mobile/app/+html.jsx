@@ -29,9 +29,14 @@ export default function Root({ children }) {
             the box the app lives in, which the app's own fixed-px layout
             can't react to. This wrapper carries the bezel; #root does not. */}
         <div id="phone-stage">{children}</div>
-        <div className="frame-note">
-          your browser&apos;s back/forward button doesn&apos;t know about the app&apos;s
-          screens and can leave it stuck.
+        <div className="frame-side">
+          <div className="frame-note">
+            your browser&apos;s back/forward button doesn&apos;t know about the app&apos;s
+            screens and can leave it stuck.
+          </div>
+          <div className="frame-note frame-note-demo">
+            The two demo logins are shared and locked, so their password and phone number can&apos;t be changed. To edit freely, register a new member and change that account instead.
+          </div>
         </div>
       </body>
     </html>
@@ -104,7 +109,8 @@ const wideScreenColumn = `
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
   }
 }
-.frame-note {
+.frame-note,
+.frame-side {
   display: none;
 }
 /* Only shown once there's real room on both sides of the frame at once, so
@@ -112,6 +118,17 @@ const wideScreenColumn = `
 @media (min-width: 1250px) {
   body {
     gap: 32px;
+  }
+  .frame-side {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    max-width: 320px;
+  }
+  .frame-note.frame-note-demo {
+    font-size: 18px;
+    font-weight: 500;
+    color: #f0b429;
   }
   .frame-note {
     display: block;
