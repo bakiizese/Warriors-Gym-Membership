@@ -18,7 +18,7 @@ ENV VITE_SITE_URL=${VITE_SITE_URL}
 RUN npm run build
 
 # --- runtime ----------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 
 # Defaults so the policy always resolves; docker-compose.yml overrides them.
 ENV API_URL=http://localhost:5000 \
